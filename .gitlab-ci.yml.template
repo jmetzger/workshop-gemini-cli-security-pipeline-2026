@@ -1,0 +1,423 @@
+# GitLab CI/CD Pipeline — Gemini CLI Security
+#
+# Dieses Template wird im Training schrittweise aufgebaut.
+# Jede Stage entspricht einem MR aus der Uebung.
+#
+# Umbenennen in .gitlab-ci.yml und ins eigene GitLab-Projekt einchecken.
+#
+# Voraussetzungen:
+#   - GitLab Runner mit Docker Executor registriert
+#   - Runner hat Zugriff auf Docker-Daemon (privileged: false)
+#   - trivy, grype im Runner-Image verfuegbar (oder als separates Image)
+
+# ============================================================
+# VARIABLEN — hier anpassen
+# ============================================================
+variables:
+  # Das offizielle Gemini CLI Image (Ausgangspunkt Tag 1)
+  BASE_IMAGE: "ghcr.io/google/gemini-cli:latest"
+
+  # Euer gehaertetes Image (wird in Stage 'build' erstellt)
+  # TODO: anpassen auf euer eigenes Registry-Projekt
+  HARDENED_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  HARDENED_IMAGE_LATEST: "$CI_REGISTRY_IMAGE:latest"
+
+  # Schwellwerte fuer Pipeline-Gates
+  # Pipeline schlaegt fehl wenn Critical CVEs diesen Wert ueberschreiten
+  MAX_CRITICAL_CVE: "0"
+  MAX_HIGH_CVE: "5"
+  MIN_CIS_PASS_RATE: "80"
+
+# ============================================================
+# STAGES — Reihenfolge ist Absicht
+# ============================================================
+stages:
+  - baseline    # Ausgangszustand messen (Base Image)
+  - lint        # Dockerfile und Config pruefen
+  - build       # Gehaertetes Image bauen
+  - scan        # Gehaertetes Image scannen
+  - test        # Guardrails und Behavioral Tests
+  - evidence    # DORA-Artefakte erzeugen
+
+# ============================================================
+# STAGE: baseline
+# Wann: immer, auch ohne eigenes Build
+# Zweck: Ausgangszustand des offiziellen Images dokumentieren
+# ============================================================
+baseline-scan:
+  stage: baseline
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - echo "=== Baseline: $BASE_IMAGE ==="
+
+    # CVE-Scan
+    - trivy image --format json --output baseline-trivy.json "$BASE_IMAGE"
+
+    # Metriken extrahieren und anzeigen
+    - |
+      echo "--- CVE Zusammenfassung ---"
+      cat baseline-trivy.json | jq '{
+        critical: [.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length,
+        high:     [.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length,
+        medium:   [.Results[].Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length,
+        packages: [.Results[].Packages[]?] | length
+      }'
+
+    # CIS Compliance
+    - trivy image --compliance docker-cis "$BASE_IMAGE" | tee baseline-cis.txt
+    - |
+      PASS=$(grep -c "PASS" baseline-cis.txt || true)
+      FAIL=$(grep -c "FAIL" baseline-cis.txt || true)
+      TOTAL=$((PASS + FAIL))
+      echo "CIS PASS: $PASS / $TOTAL"
+
+  artifacts:
+    name: "baseline-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - baseline-trivy.json
+      - baseline-cis.txt
+    expire_in: 1 year
+  # Immer ausfuehren — auch bei fehlendem Dockerfile
+  rules:
+    - when: always
+
+# ============================================================
+# STAGE: lint
+# Wann: wenn Dockerfile oder settings.json sich aendern
+# Zweck: Fehler frueh finden, bevor gebaut wird
+# ============================================================
+dockerfile-lint:
+  stage: lint
+  image: hadolint/hadolint:latest-alpine
+  script:
+    - echo "=== Dockerfile Lint ==="
+    - hadolint Dockerfile
+  rules:
+    - changes:
+        - Dockerfile
+  allow_failure: false
+
+settings-validate:
+  stage: lint
+  image: python:3.11-alpine
+  script:
+    - echo "=== settings.json Validierung ==="
+    - |
+      python3 -c "
+      import json, sys
+
+      try:
+          cfg = json.load(open('settings.json'))
+      except FileNotFoundError:
+          print('WARN: keine settings.json gefunden — keine Tool-Permissions konfiguriert')
+          sys.exit(0)
+      except json.JSONDecodeError as e:
+          print(f'FAIL: settings.json ist kein gueltiges JSON: {e}')
+          sys.exit(1)
+
+      if 'tools' not in cfg:
+          print('WARN: kein tools-Abschnitt — alle Tools erlaubt')
+      elif 'core' in cfg.get('tools', {}):
+          count = len(cfg['tools']['core'])
+          print(f'INFO: Allowlist aktiv mit {count} Tools (staerkste Isolation)')
+      elif 'exclude' in cfg.get('tools', {}):
+          print('WARN: nur Blocklist aktiv — schwaecher als Allowlist')
+          print('      DORA Art. 9: Begruendung in docs/guardrail-decision.md eintragen')
+          # Kein sys.exit(1) — Blocklist ist zulaessig, muss aber dokumentiert sein
+      else:
+          print('WARN: tools-Abschnitt leer')
+
+      print('PASS: settings.json ist gueltiges JSON')
+      "
+    # Pruefen ob Entscheidung dokumentiert ist (nur WARN, kein FAIL)
+    - |
+      if [ -f docs/guardrail-decision.md ]; then
+        echo "PASS: guardrail-decision.md vorhanden"
+      else
+        echo "WARN: docs/guardrail-decision.md fehlt — DORA Art. 9 Dokumentation erwaegt"
+      fi
+  rules:
+    - changes:
+        - settings.json
+        - docs/guardrail-decision.md
+    - when: never
+
+# ============================================================
+# STAGE: build
+# Wann: wenn Dockerfile sich aendert
+# Zweck: Gehaertetes Image bauen und in Registry pushen
+# ============================================================
+build-hardened:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - echo "=== Build: $HARDENED_IMAGE ==="
+    - |
+      docker build \
+        --label "git-commit=$CI_COMMIT_SHA" \
+        --label "git-ref=$CI_COMMIT_REF_NAME" \
+        --label "built-by=gitlab-ci" \
+        --label "build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        -t "$HARDENED_IMAGE" \
+        -t "$HARDENED_IMAGE_LATEST" \
+        .
+    - docker push "$HARDENED_IMAGE"
+    - docker push "$HARDENED_IMAGE_LATEST"
+  rules:
+    - changes:
+        - Dockerfile
+  # TODO: nach Tag 1 einkommentieren wenn eigenes Dockerfile existiert
+  # Bis dahin: BASE_IMAGE direkt in den folgenden Stages verwenden
+
+# ============================================================
+# STAGE: scan
+# Wann: nach Build oder auf Base Image
+# Zweck: CVEs und Compliance des (gehaerteten) Images pruefen
+# ============================================================
+
+# Hilfsfunktion: welches Image soll gescannt werden?
+# Solange kein eigenes Build existiert: BASE_IMAGE
+# Sobald build-hardened laeuft: HARDENED_IMAGE
+.scan-target: &scan-target
+  # TODO: nach erstem Build auf HARDENED_IMAGE umstellen
+  SCAN_TARGET: "$BASE_IMAGE"
+
+cve-scan:
+  stage: scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  variables:
+    <<: *scan-target
+  script:
+    - echo "=== CVE Scan: $SCAN_TARGET ==="
+    - trivy image --format json --output trivy.json "$SCAN_TARGET"
+
+    # Metriken
+    - |
+      CRITICAL=$(cat trivy.json | jq '[.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length')
+      HIGH=$(cat trivy.json | jq '[.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length')
+      echo "Critical: $CRITICAL | High: $HIGH"
+      echo "CRITICAL=$CRITICAL" >> metrics.env
+      echo "HIGH=$HIGH" >> metrics.env
+
+    # Gates — Pipeline schlaegt fehl wenn Schwellwert ueberschritten
+    - |
+      [ "$CRITICAL" -le "$MAX_CRITICAL_CVE" ] \
+        || (echo "FAIL: $CRITICAL Critical CVEs (max: $MAX_CRITICAL_CVE)" && exit 1)
+    - |
+      [ "$HIGH" -le "$MAX_HIGH_CVE" ] \
+        || (echo "FAIL: $HIGH High CVEs (max: $MAX_HIGH_CVE)" && exit 1)
+
+    - echo "PASS: CVE-Schwellwerte eingehalten"
+
+  artifacts:
+    paths:
+      - trivy.json
+    reports:
+      dotenv: metrics.env
+    expire_in: 1 year
+
+cis-scan:
+  stage: scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  variables:
+    <<: *scan-target
+  script:
+    - echo "=== CIS Docker Benchmark: $SCAN_TARGET ==="
+    - trivy image --compliance docker-cis "$SCAN_TARGET" | tee cis-report.txt
+
+    # Pass-Rate berechnen
+    - |
+      PASS=$(grep -c "PASS" cis-report.txt || true)
+      FAIL=$(grep -c "FAIL" cis-report.txt || true)
+      TOTAL=$((PASS + FAIL))
+      RATE=0
+      [ "$TOTAL" -gt 0 ] && RATE=$((PASS * 100 / TOTAL))
+      echo "CIS Pass-Rate: $RATE% ($PASS/$TOTAL)"
+      echo "CIS_PASS_RATE=$RATE" >> cis-metrics.env
+
+    # Gate (nur Warnung — kein hard fail beim ersten Durchlauf)
+    - |
+      PASS=$(grep -c "PASS" cis-report.txt || true)
+      FAIL=$(grep -c "FAIL" cis-report.txt || true)
+      TOTAL=$((PASS + FAIL))
+      RATE=0
+      [ "$TOTAL" -gt 0 ] && RATE=$((PASS * 100 / TOTAL))
+      if [ "$RATE" -lt "$MIN_CIS_PASS_RATE" ]; then
+        echo "WARN: CIS Pass-Rate $RATE% unter Ziel $MIN_CIS_PASS_RATE%"
+        # TODO: nach Haertung auf exit 1 umstellen:
+        # exit 1
+      else
+        echo "PASS: CIS Pass-Rate $RATE% erreicht Ziel $MIN_CIS_PASS_RATE%"
+      fi
+
+  artifacts:
+    paths:
+      - cis-report.txt
+    reports:
+      dotenv: cis-metrics.env
+    expire_in: 1 year
+
+# ============================================================
+# STAGE: test
+# Wann: immer nach scan
+# Zweck: Guardrails und Verhalten pruefen
+# ============================================================
+guardrail-tests:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    <<: *scan-target
+  script:
+    - echo "=== Guardrail Tests: $SCAN_TARGET ==="
+    - chmod +x tests/guardrails/run.sh
+    - IMAGE="$SCAN_TARGET" bash tests/guardrails/run.sh
+  artifacts:
+    when: always
+    paths:
+      - guardrail-test.log
+    expire_in: 1 year
+
+behavioral-tests:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    <<: *scan-target
+  script:
+    - echo "=== Behavioral Tests: $SCAN_TARGET ==="
+    - chmod +x tests/behavioral/run.sh
+    - IMAGE="$SCAN_TARGET" bash tests/behavioral/run.sh | tee behavioral-test.log
+  artifacts:
+    when: always
+    paths:
+      - behavioral-test.log
+    expire_in: 1 year
+  # Noch kein Hard-Fail — LLM-Output kann variieren
+  # TODO: nach Stabilisierung der expected_patterns.txt auf allow_failure: false
+  allow_failure: true
+
+injection-tests:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    <<: *scan-target
+  script:
+    - echo "=== Injection Tests: $SCAN_TARGET ==="
+    - chmod +x tests/injection/run.sh
+    - IMAGE="$SCAN_TARGET" bash tests/injection/run.sh | tee injection-test.log
+  artifacts:
+    when: always
+    paths:
+      - injection-test.log
+    expire_in: 1 year
+
+# Guardrail-Aenderungen extra pruefen (triggered by settings.json / GEMINI.md MR)
+guardrail-change-review:
+  stage: test
+  image: python:3.11-alpine
+  script:
+    - echo "=== Guardrail Change Review ==="
+
+    # Policy-Diff anzeigen: was hat sich an den Guardrails geaendert?
+    - |
+      if git show origin/$CI_DEFAULT_BRANCH:settings.json > settings.old.json 2>/dev/null; then
+        echo "--- Aenderungen in settings.json ---"
+        diff <(python3 -m json.tool settings.old.json) \
+             <(python3 -m json.tool settings.json) || true
+
+        # Warnung wenn Allowlist groesser geworden ist
+        OLD=$(python3 -c "import json; d=json.load(open('settings.old.json')); print(len(d.get('tools',{}).get('core',[])))" 2>/dev/null || echo 0)
+        NEW=$(python3 -c "import json; d=json.load(open('settings.json')); print(len(d.get('tools',{}).get('core',[])))" 2>/dev/null || echo 0)
+        if [ "$NEW" -gt "$OLD" ]; then
+          echo "WARN: Allowlist wurde groesser ($OLD -> $NEW Tools)"
+          echo "      Sicherheits-Review empfohlen"
+        fi
+      else
+        echo "INFO: Kein Vergleich moeglich (erster Commit oder kein main-Branch)"
+      fi
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - settings.json
+        - GEMINI.md
+
+# ============================================================
+# STAGE: evidence
+# Wann: immer (auf main/default branch), oder manuell
+# Zweck: DORA-Artefakte erzeugen und aufbewahren
+# ============================================================
+dora-evidence:
+  stage: evidence
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  variables:
+    <<: *scan-target
+  script:
+    - echo "=== DORA Artefakte: $SCAN_TARGET ==="
+
+    # SBOM — Art. 19 Third-Party Risk
+    - |
+      trivy image \
+        --format cyclonedx \
+        --output sbom.json \
+        "$SCAN_TARGET"
+      echo "PASS: SBOM generiert ($(cat sbom.json | wc -c) bytes)"
+
+    # Vulnerability Report HTML — Art. 8 Dokumentation
+    - |
+      trivy image \
+        --format template \
+        --template "@contrib/html.tpl" \
+        --output vuln-report.html \
+        "$SCAN_TARGET"
+      echo "PASS: Vulnerability Report generiert"
+
+    # Metriken-Zusammenfassung fuer Audit
+    - |
+      cat > audit-summary.txt << EOF
+      DORA Evidence Summary
+      =====================
+      Datum:    $(date -u +%Y-%m-%dT%H:%M:%SZ)
+      Image:    $SCAN_TARGET
+      Commit:   $CI_COMMIT_SHA
+      Branch:   $CI_COMMIT_REF_NAME
+      Pipeline: $CI_PIPELINE_URL
+
+      CVE Critical: $(cat trivy.json 2>/dev/null | jq '[.Results[].Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' || echo "n/a")
+      CVE High:     $(cat trivy.json 2>/dev/null | jq '[.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length' || echo "n/a")
+
+      Artefakte:
+        sbom.json         — Software Bill of Materials (CycloneDX)
+        vuln-report.html  — Vulnerability Report
+        cis-report.txt    — CIS Docker Benchmark
+        guardrail-test.log — Guardrail Test Ergebnisse
+        injection-test.log — Injection Test Ergebnisse
+      EOF
+      cat audit-summary.txt
+
+  artifacts:
+    name: "dora-evidence-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - sbom.json
+      - vuln-report.html
+      - audit-summary.txt
+    expire_in: 1 year    # Aufbewahrungsfrist fuer DORA-Audit
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - when: manual      # Auf Feature-Branches manuell ausfuehren

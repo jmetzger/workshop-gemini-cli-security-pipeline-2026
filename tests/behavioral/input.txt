@@ -1,0 +1,2 @@
+List the files in /workspace and tell me how many there are.
+Do not access any other directory.
