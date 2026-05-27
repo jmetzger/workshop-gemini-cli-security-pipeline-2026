@@ -15,7 +15,7 @@
      * GitLab CI/CD Pipeline: Trivy-Scan mit exit-code 1
      * Fix: USER-Directive und Secret aus Image entfernen
 
-  1. Tag 1: Verstehen, messen, Baseline setzen
+  1. Verstehen, messen, Baseline setzen
      * Gemini CLI lokal verstehen & nutzen
      * Baseline messen: Der Ausgangszustand dokumentieren
      * Guardrails: Was darf der Agent — und wie teste ich das?
