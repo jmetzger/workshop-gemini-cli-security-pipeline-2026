@@ -125,6 +125,11 @@ Secrets found:
 
 ## Schritt 4: GitLab CI/CD Pipeline mit Trivy
 
+Warum **Kaniko** statt Docker-in-Docker?
+Docker-in-Docker benoetigt `privileged: true` auf dem Runner — das gibt dem Job
+Root-Rechte auf dem Host-Kernel. Kaniko baut das Image vollstaendig im Userspace,
+braucht keinen Docker-Daemon und keinen privilegierten Modus.
+
 `.gitlab-ci.yml` anlegen:
 
 ```
@@ -140,13 +145,16 @@ variables:
 
 build:
   stage: build
-  image: docker:24
-  services:
-    - docker:24-dind
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
-    - docker push $IMAGE_NAME:$IMAGE_TAG
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf "%s:%s" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor
+        --context $CI_PROJECT_DIR
+        --dockerfile $CI_PROJECT_DIR/Dockerfile
+        --destination $IMAGE_NAME:$IMAGE_TAG
 
 trivy-scan:
   stage: scan
