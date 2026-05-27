@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" font-family="sans-serif">
+  <defs>
+    <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#1d6196"/>
+    </marker>
+    <marker id="arr-grey" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#5d6d7e"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="760" height="400" fill="#f9fafb" rx="6"/>
+
+  <!-- Header -->
+  <rect x="20" y="14" width="720" height="46" rx="6" fill="#1a1a2e"/>
+  <text x="380" y="33" text-anchor="middle" font-size="12" fill="#8899aa">Regulation EU 2022/2554</text>
+  <text x="380" y="51" text-anchor="middle" font-size="15" font-weight="bold" fill="white">DORA — Gemini CLI als ICT-Asset</text>
+
+  <!-- Column headers -->
+  <rect x="20" y="74" width="345" height="30" rx="4" fill="#1d6196"/>
+  <text x="192" y="94" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Pipeline deckt ab (Hands-on)</text>
+
+  <rect x="395" y="74" width="345" height="30" rx="4" fill="#5d6d7e"/>
+  <text x="567" y="94" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Organisatorisch ergaenzen</text>
+
+  <!-- Left boxes -->
+  <rect x="30" y="118" width="325" height="66" rx="5" fill="white" stroke="#1d6196" stroke-width="1.5"/>
+  <text x="46" y="138" font-size="10" font-weight="bold" fill="#1d6196">Art. 8 — Identifikation</text>
+  <text x="46" y="154" font-size="11" fill="#333">Inventar: Image-Digest, Skill-Hashes, Endpoint</text>
+  <text x="46" y="170" font-size="11" fill="#555">ai-bom.json · sbom.json · REVISIONS.md</text>
+
+  <rect x="30" y="196" width="325" height="66" rx="5" fill="white" stroke="#1d6196" stroke-width="1.5"/>
+  <text x="46" y="216" font-size="10" font-weight="bold" fill="#1d6196">Art. 9 — Schutz &amp; Haertung</text>
+  <text x="46" y="232" font-size="11" fill="#333">Image · Sandbox (--network none, --read-only)</text>
+  <text x="46" y="248" font-size="11" fill="#555">Tool-Allowlist · Egress-Kontrolle · Skills versioniert</text>
+
+  <rect x="30" y="274" width="325" height="66" rx="5" fill="white" stroke="#1d6196" stroke-width="1.5"/>
+  <text x="46" y="294" font-size="10" font-weight="bold" fill="#1d6196">Art. 24/25 — Resilienz-Testing</text>
+  <text x="46" y="310" font-size="11" fill="#333">CVE-Scan · CIS Benchmark · Guardrail-Tests</text>
+  <text x="46" y="326" font-size="11" fill="#555">Injection-Tests · Behavioral Tests (Golden Baseline)</text>
+
+  <!-- Right boxes -->
+  <rect x="405" y="118" width="325" height="66" rx="5" fill="white" stroke="#5d6d7e" stroke-width="1.5"/>
+  <text x="421" y="138" font-size="10" font-weight="bold" fill="#5d6d7e">Art. 10 — Detektion</text>
+  <text x="421" y="154" font-size="11" fill="#333">Logging: Wer, wann, welcher Prompt, welcher Output</text>
+  <text x="421" y="170" font-size="11" fill="#555">Pipeline-Logs als erster Detektionsmechanismus</text>
+
+  <rect x="405" y="196" width="325" height="66" rx="5" fill="white" stroke="#5d6d7e" stroke-width="1.5"/>
+  <text x="421" y="216" font-size="10" font-weight="bold" fill="#5d6d7e">Art. 28/30 — Drittparteienrisiko</text>
+  <text x="421" y="232" font-size="11" fill="#333">Google als ICT-Drittanbieter: Vertrag · DPA</text>
+  <text x="421" y="248" font-size="11" fill="#555">EU-Datenspeicherung · Exit-Strategie · SBOM</text>
+
+  <rect x="405" y="274" width="325" height="66" rx="5" fill="white" stroke="#5d6d7e" stroke-width="1.5"/>
+  <text x="421" y="294" font-size="10" font-weight="bold" fill="#5d6d7e">Art. 17/18/19 — Incident Management</text>
+  <text x="421" y="310" font-size="11" fill="#333">Was ist ein Vorfall? Wer meldet wann?</text>
+  <text x="421" y="326" font-size="11" fill="#555">Playbook · Meldepflicht gemaess DORA Art. 19</text>
+
+  <!-- Footer -->
+  <text x="380" y="374" text-anchor="middle" font-size="11" fill="#666">Art. 9 (Haerten) + Art. 24 (Testen) = Kern des Workshops — Tun und Belegen gehoeren zusammen.</text>
+</svg>

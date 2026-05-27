@@ -6,6 +6,21 @@
 
 ---
 
+## Uebersicht
+
+![DORA Uebersicht](/images/dora-overview.svg)
+
+| # | DORA Artikel | Handlungsfeld | Workshop | Kern-Artefakt |
+|---|---|---|---|---|
+| 1 | Art. 8 | Identifikation | ⭐ | ai-bom.json, sbom.json, REVISIONS.md |
+| 2 | Art. 9 | Schutz &amp; Haertung | ⭐ | CIS-Report, Guardrail-Tests |
+| 3 | Art. 10 | Detektion | — | Pipeline-Logs |
+| 4 | Art. 24/25 | Resilienz-Testing | ⭐ | trivy.json, grype.json, cis-report.html |
+| 5 | Art. 28/30 | Drittparteienrisiko | — | sbom.json, DPA |
+| 6 | Art. 17/18/19 | Incident Management | — | Playbook |
+
+---
+
 ## Was DORA von uns verlangt — und warum das hier relevant ist
 
 DORA (Regulation EU 2022/2554) ist ein Resilienzgesetz fuer Finanzunternehmen.
