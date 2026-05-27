@@ -5,11 +5,14 @@
   1. Einstieg
      * [DORA-Einordnung](docs/dora-overview.md)
 
-  1. Google Image härten
-     
+  1. Gemini CLI absichern: Nur Images aus privater Registry
+     * [Uebung: Gemini CLI nur aus privater Registry laden](docs/uebung-private-registry.md)
+     * Gemini CLI lokal aus Quellcode bauen (Dockerfile)
+     * Docker Daemon konfigurieren: registry-mirrors (Linux & Windows)
+     * Docker Content Trust (DCT) aktivieren
+     * Verifikation: Pull von Docker Hub schlaegt fehl
 
-
-  1. Verstehen, messen, Baseline setzen
+  1. Tag 1: Verstehen, messen, Baseline setzen
      * Gemini CLI lokal verstehen & nutzen
      * Baseline messen: Der Ausgangszustand dokumentieren
      * Guardrails: Was darf der Agent — und wie teste ich das?
