@@ -7,9 +7,6 @@
 
   1. Gemini CLI absichern: Zentrale Security-Settings
      * [Uebung: Gemini CLI absichern ueber zentrale Settings](docs/uebung-gemini-cli-absichern.md)
-     * Konfigurations-Hierarchie: System-Policy, Benutzer, Projekt
-     * Wichtige Settings: disableYoloMode, Sandbox, Tool-Allowlist, MCP-Sperre
-     * Verteilung auf Linux und Windows (zentrale Datei, Berechtigungen)
 
   1. Gehaertetes Gemini-CLI-Image bauen
      * [Uebung: Image lokal bauen, scannen und haerten](docs/uebung-image-haerten.md)
