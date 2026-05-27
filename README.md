@@ -5,11 +5,14 @@
   1. Einstieg
      * [DORA-Einordnung](docs/dora-overview.md)
 
-  1. Tag 1: Verstehen, messen, Baseline setzen
+  1. Google Image härten
+     
+
+
+  1. Verstehen, messen, Baseline setzen
      * Gemini CLI lokal verstehen & nutzen
      * Baseline messen: Der Ausgangszustand dokumentieren
      * Guardrails: Was darf der Agent — und wie teste ich das?
-     * Tag 1 Zusammenfassung: Ausgangslage ist klar
 
   1. Automatisiert verbessern — Pipeline als Verbesserungsmotor
      * GitLab Pipeline aufsetzen
