@@ -12,8 +12,8 @@
      * [Uebung: Image lokal bauen, scannen und haerten](docs/uebung-image-haerten.md)
 
   1. Gemini-CLI-Image auf Sicherheitsluecken scannen
-     * CVE-Scan: Schwachstellen in Paketen und Secrets erkennen
-     * CIS-Scan: Docker Benchmark — Konfigurationsqualitaet pruefen
+     * [CVE-Scan: Schwachstellen in Paketen und Secrets erkennen](docs/uebung-image-haerten.md#schritt-3-lokal-mit-trivy-scannen)
+     * [CIS-Scan: Docker Benchmark — Konfigurationsqualitaet pruefen](docs/uebung-image-haerten.md#schritt-4-gitlab-cicd-pipeline-mit-trivy)
 
   1. Verstehen, messen, Baseline setzen
      * Gemini CLI lokal verstehen & nutzen
