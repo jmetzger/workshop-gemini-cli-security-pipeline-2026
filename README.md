@@ -23,9 +23,12 @@
   1. Automatisiert verbessern — Pipeline als Verbesserungsmotor
      * GitLab Pipeline aufsetzen
      * MR-Schleife: Schrittweise verbessern
-     * Guardrails in die Pipeline integrieren
-       * [Uebung 1: Golden Baseline erstellen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-01-baseline/README.md)
-       * [Uebung 2: Regression Detection mit Gemini-Judge](../reverse-engineer-hermes-2-0-skills-improvement/uebung-02-regression/README.md)
-       * [Uebung 3: CI/CD Pipeline mit allen 3 Phasen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-03-pipeline/README.md)
      * DORA-Nachweis: Was die Pipeline automatisch produziert
-     * Abschluss: Was habt ihr gebaut?
+
+  1. Skill-Regression automatisch erkennen (Hermes 2.0)
+     * [Phase 1 — Reflective Phase: Golden Baseline erstellen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-01-baseline/README.md)
+     * [Phase 2 — Execution in Sandbox: Skill ausfuehren & testen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-02-regression/README.md)
+     * [Phase 3 — Independent Verification: Gemini-Judge bewertet](../reverse-engineer-hermes-2-0-skills-improvement/uebung-03-pipeline/README.md)
+
+  1. Abschluss
+     * Was habt ihr gebaut?
