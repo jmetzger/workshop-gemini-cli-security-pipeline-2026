@@ -11,6 +11,13 @@
      * Wichtige Settings: disableYoloMode, Sandbox, Tool-Allowlist, MCP-Sperre
      * Verteilung auf Linux und Windows (zentrale Datei, Berechtigungen)
 
+  1. Gehaertetes Gemini-CLI-Image bauen
+     * [Uebung: Image lokal bauen, scannen und haerten](docs/uebung-image-haerten.md)
+     * Dockerfile mit zwei absichtlichen Luecken (Root-User, Secret in ENV)
+     * Lokal mit Trivy scannen — Luecken finden
+     * GitLab CI/CD Pipeline: Trivy-Scan mit exit-code 1
+     * Fix: USER-Directive und Secret aus Image entfernen
+
   1. Tag 1: Verstehen, messen, Baseline setzen
      * Gemini CLI lokal verstehen & nutzen
      * Baseline messen: Der Ausgangszustand dokumentieren
