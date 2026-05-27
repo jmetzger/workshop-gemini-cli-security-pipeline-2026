@@ -11,6 +11,10 @@
   1. Gehaertetes Gemini-CLI-Image bauen
      * [Uebung: Image lokal bauen, scannen und haerten](docs/uebung-image-haerten.md)
 
+  1. Gemini-CLI-Image auf Sicherheitsluecken scannen
+     * CVE-Scan: Schwachstellen in Paketen und Secrets erkennen
+     * CIS-Scan: Docker Benchmark — Konfigurationsqualitaet pruefen
+
   1. Verstehen, messen, Baseline setzen
      * Gemini CLI lokal verstehen & nutzen
      * Baseline messen: Der Ausgangszustand dokumentieren
