@@ -5,12 +5,11 @@
   1. Einstieg
      * [DORA-Einordnung](docs/dora-overview.md)
 
-  1. Gemini CLI absichern: Nur Images aus privater Registry
-     * [Uebung: Gemini CLI nur aus privater Registry laden](docs/uebung-private-registry.md)
-     * Gemini CLI lokal aus Quellcode bauen (Dockerfile)
-     * Docker Daemon konfigurieren: registry-mirrors (Linux & Windows)
-     * Docker Content Trust (DCT) aktivieren
-     * Verifikation: Pull von Docker Hub schlaegt fehl
+  1. Gemini CLI absichern: Zentrale Security-Settings
+     * [Uebung: Gemini CLI absichern ueber zentrale Settings](docs/uebung-gemini-cli-absichern.md)
+     * Konfigurations-Hierarchie: System-Policy, Benutzer, Projekt
+     * Wichtige Settings: disableYoloMode, Sandbox, Tool-Allowlist, MCP-Sperre
+     * Verteilung auf Linux und Windows (zentrale Datei, Berechtigungen)
 
   1. Tag 1: Verstehen, messen, Baseline setzen
      * Gemini CLI lokal verstehen & nutzen
