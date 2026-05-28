@@ -39,4 +39,7 @@
   1. KI-Nutzung messen — Sind wir schneller geworden?
      * [Velocity-Messung: Cycle Time Vorher/Nachher mit GitLab](docs/ki-velocity-messung.md)
 
+  1. OWASP LLM Top 10 — Was noch fehlt
+     * [Noch nicht abgedeckte Schwachstellen aus dem OWASP LLM Top 10 (2025)](docs/owasp-llm-top10-erweiterungen.md)
+
   
