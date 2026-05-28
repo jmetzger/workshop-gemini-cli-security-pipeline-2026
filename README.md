@@ -15,22 +15,21 @@
      * [CVE-Scan: Schwachstellen in Paketen und Secrets erkennen](docs/uebung-image-haerten.md#schritt-3-lokal-mit-trivy-scannen)
      * [CIS-Scan: Docker Benchmark — Konfigurationsqualitaet pruefen](docs/uebung-image-haerten.md#schritt-4-gitlab-cicd-pipeline-mit-trivy)
 
-  1. Verstehen, messen, Baseline setzen
+  1. LLM-Injections verhinden, testen und analysieren
      * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
      * [Guardrails setzen und pruefen](docs/uebung-llm-injection.md#guardrails-pruefen--verifikation-mit-tests)
-
-  1. Automatisiert verbessern — Pipeline als Verbesserungsmotor
-     * GitLab Pipeline aufsetzen
-     * MR-Schleife: Schrittweise verbessern
-     * DORA-Nachweis: Was die Pipeline automatisch produziert
 
   1. Skill-Regression automatisch erkennen (Hermes 2.0)
      * [Phase 1 — Reflective Phase: Golden Baseline erstellen](hermes-skill-regression/uebung-01-baseline/README.md)
      * [Phase 2 — Execution in Sandbox: Skill ausfuehren & testen](hermes-skill-regression/uebung-02-regression/README.md)
      * [Phase 3 — Independent Verification: Gemini-Judge bewertet](hermes-skill-regression/uebung-03-pipeline/README.md)
 
+  1. gemini cli - image  -> automatisiert verbessern — Pipeline als Verbesserungsmotor
+     * GitLab Pipeline aufsetzen
+     * MR-Schleife: Schrittweise verbessern
+     * DORA-Nachweis: Was die Pipeline automatisch produziert
+
   1. KI-Nutzung messen — Sind wir schneller geworden?
      * [Velocity-Messung: Cycle Time Vorher/Nachher mit GitLab](docs/ki-velocity-messung.md)
 
-  1. Abschluss
-     * Was habt ihr gebaut?
+  
