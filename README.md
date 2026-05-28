@@ -16,6 +16,7 @@
      * [CIS-Scan: Docker Benchmark — Konfigurationsqualitaet pruefen](docs/uebung-image-haerten.md#schritt-4-gitlab-cicd-pipeline-mit-trivy)
 
   1. Verstehen, messen, Baseline setzen
+     * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
      * Gemini CLI lokal verstehen & nutzen
      * Baseline messen: Der Ausgangszustand dokumentieren
      * Guardrails: Was darf der Agent — und wie teste ich das?
@@ -29,6 +30,9 @@
      * [Phase 1 — Reflective Phase: Golden Baseline erstellen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-01-baseline/README.md)
      * [Phase 2 — Execution in Sandbox: Skill ausfuehren & testen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-02-regression/README.md)
      * [Phase 3 — Independent Verification: Gemini-Judge bewertet](../reverse-engineer-hermes-2-0-skills-improvement/uebung-03-pipeline/README.md)
+
+  1. KI-Nutzung messen — Sind wir schneller geworden?
+     * [Velocity-Messung: Cycle Time Vorher/Nachher mit GitLab](docs/ki-velocity-messung.md)
 
   1. Abschluss
      * Was habt ihr gebaut?
