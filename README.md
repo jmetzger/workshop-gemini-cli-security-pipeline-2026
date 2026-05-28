@@ -19,7 +19,7 @@
      * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
      * [Guardrails setzen und pruefen](docs/uebung-llm-injection.md#guardrails-pruefen--verifikation-mit-tests)
 
-  1. Gemini CLI Hooks — Guardrails als Extension einhaengen
+  1. Gemini CLI Hooks — als Guardrails Methode nutzen (konkretes Beispiel)
      * [Uebung: BeforeTool / AfterTool Hooks konfigurieren und testen](docs/uebung-hooks-guardrails.md)
 
   1. Skill-Regression automatisch erkennen (Hermes 2.0)
@@ -31,6 +31,10 @@
      * GitLab Pipeline aufsetzen
      * MR-Schleife: Schrittweise verbessern
      * DORA-Nachweis: Was die Pipeline automatisch produziert
+    
+  1. Best Practice Ausblick
+     * Bugs aus Issues automatisiert/halbautomatisiet (mit gemini cli) in gitlab lösen
+     * Bugs automatisiert finden und MR-Vorschlag mit gemini cli automatisiert erstellen lassen
 
   1. KI-Nutzung messen — Sind wir schneller geworden?
      * [Velocity-Messung: Cycle Time Vorher/Nachher mit GitLab](docs/ki-velocity-messung.md)
