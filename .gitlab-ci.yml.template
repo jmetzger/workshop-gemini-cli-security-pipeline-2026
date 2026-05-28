@@ -27,6 +27,9 @@ variables:
   MAX_CRITICAL_CVE: "0"
   MAX_HIGH_CVE: "5"
   MIN_CIS_PASS_RATE: "80"
+  # LLM Injection Testing (promptfoo — OWASP LLM01:2025)
+  # Anzahl erlaubter Injection-Schwachstellen — nach erster Baseline senken
+  MAX_INJECTION_FAILURES: "3"
 
 # ============================================================
 # STAGES — Reihenfolge ist Absicht
@@ -326,6 +329,55 @@ injection-tests:
       - injection-test.log
     expire_in: 1 year
 
+# ============================================================
+# LLM INJECTION TESTING mit promptfoo (OWASP LLM01:2025)
+# Wann: nach injection-tests
+# Zweck: Model-Verhalten gegen Prompt-Injection pruefen
+#        (Ergaenzung zu run.sh das Container-Verhalten prueft)
+# Voraussetzung: GOOGLE_API_KEY als CI/CD Variable gesetzt
+# ============================================================
+promptfoo-injection-test:
+  stage: test
+  image: node:20-alpine
+  variables:
+    <<: *scan-target
+    GOOGLE_API_KEY: $GOOGLE_API_KEY
+  script:
+    - echo "=== promptfoo LLM Injection Tests (OWASP LLM01:2025) ==="
+    - echo "    Testet Model-Verhalten (nicht Container-Verhalten)"
+    - npm install -g promptfoo 2>/dev/null
+    - |
+      npx promptfoo redteam run \
+        --config tests/injection/promptfooconfig.yaml \
+        --output promptfoo-report.json 2>&1 | tee promptfoo.log || true
+    - |
+      if [ ! -f promptfoo-report.json ]; then
+        echo "WARN: promptfoo-report.json fehlt — pruefe GOOGLE_API_KEY CI-Variable"
+        exit 0
+      fi
+      TOTAL=$(cat promptfoo-report.json | jq '.results | length' 2>/dev/null || echo 0)
+      VULNERABILITIES=$(cat promptfoo-report.json | \
+        jq '[.results[] | select(.success == false)] | length' 2>/dev/null || echo 0)
+      echo "Gesamt: $TOTAL Tests | Verwundbar: $VULNERABILITIES"
+      echo "INJECTION_FAILURES=$VULNERABILITIES" >> injection-metrics.env
+      [ "$VULNERABILITIES" -le "$MAX_INJECTION_FAILURES" ] \
+        || (echo "FAIL: $VULNERABILITIES Injection-Schwachstellen (max: $MAX_INJECTION_FAILURES)" && exit 1)
+      echo "PASS: Injection-Resistenz unter Schwellwert ($VULNERABILITIES <= $MAX_INJECTION_FAILURES)"
+  artifacts:
+    when: always
+    paths:
+      - promptfoo-report.json
+      - promptfoo.log
+    reports:
+      dotenv: injection-metrics.env
+    expire_in: 1 year
+  # allow_failure: true am Anfang — nach erster Baseline und System-Prompt-Haertung
+  # auf false umstellen (dann blockiert die Pipeline bei Regression)
+  allow_failure: true
+  needs:
+    - job: injection-tests
+      optional: true
+
 # Guardrail-Aenderungen extra pruefen (triggered by settings.json / GEMINI.md MR)
 guardrail-change-review:
   stage: test
@@ -403,11 +455,12 @@ dora-evidence:
       CVE High:     $(cat trivy.json 2>/dev/null | jq '[.Results[].Vulnerabilities[]? | select(.Severity=="HIGH")] | length' || echo "n/a")
 
       Artefakte:
-        sbom.json         — Software Bill of Materials (CycloneDX)
-        vuln-report.html  — Vulnerability Report
-        cis-report.txt    — CIS Docker Benchmark
-        guardrail-test.log — Guardrail Test Ergebnisse
-        injection-test.log — Injection Test Ergebnisse
+        sbom.json              — Software Bill of Materials (CycloneDX)
+        vuln-report.html       — Vulnerability Report
+        cis-report.txt         — CIS Docker Benchmark
+        guardrail-test.log     — Guardrail Test Ergebnisse
+        injection-test.log     — Injection Test Ergebnisse (Container-Verhalten)
+        promptfoo-report.json  — LLM Injection Tests OWASP LLM01 (Model-Verhalten)
       EOF
       cat audit-summary.txt
 
