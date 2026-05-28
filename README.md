@@ -17,9 +17,6 @@
 
   1. Verstehen, messen, Baseline setzen
      * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
-     * Gemini CLI lokal verstehen & nutzen
-     * Baseline messen: Der Ausgangszustand dokumentieren
-     * Guardrails: Was darf der Agent — und wie teste ich das?
 
   1. Automatisiert verbessern — Pipeline als Verbesserungsmotor
      * GitLab Pipeline aufsetzen
