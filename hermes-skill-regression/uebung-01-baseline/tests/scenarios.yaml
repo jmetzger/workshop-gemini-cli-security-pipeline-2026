@@ -1,0 +1,60 @@
+scenarios:
+  - id: "S01-resourcequota"
+    name: "Kubernetes ResourceQuota Uebung erstellen"
+    prompt: |
+      Erstelle eine Uebung fuer Kubernetes ResourceQuota auf einem geteilten Cluster.
+      Gib mir die vollstaendige Uebungsdatei im richtigen Format.
+    erwartete_merkmale:
+      - text: "Nummerierung im Bereich 20+"
+        schluesselwoerter: ["20-", "20+", "20_", "21_", "22_"]
+      - text: "Namespace Format <prefix>-<dein-name>"
+        schluesselwoerter: ["dein-name", "<dein-name>"]
+      - text: "Namespace NICHT im Manifest"
+        schluesselwoerter: ["kubectl apply -f . -n", "apply -f"]
+      - text: "Dateiendung .yml"
+        schluesselwoerter: [".yml"]
+      - text: "Aufraeumen-Sektion vorhanden"
+        schluesselwoerter: ["Aufraeumen", "kubectl delete namespace"]
+      - text: "Schritt-fuer-Schritt Struktur"
+        schluesselwoerter: ["Schritt 1", "Schritt 2", "## Schritt"]
+
+  - id: "S02-namespace-konvention"
+    name: "Namespace-Konvention erklaeren"
+    prompt: |
+      In welchem Format soll ein Teilnehmer seinen Namespace benennen?
+      Soll der Namespace im Kubernetes-Manifest stehen?
+      Antworte konkret fuer einen geteilten Cluster.
+    erwartete_merkmale:
+      - text: "Namespace Format <prefix>-<dein-name>"
+        schluesselwoerter: ["dein-name", "prefix"]
+      - text: "Namespace gehoert NICHT ins Manifest"
+        schluesselwoerter: ["nicht", "kubectl apply", "-n "]
+      - text: "Namespace bei kubectl apply angeben"
+        schluesselwoerter: ["kubectl apply -f", "-n"]
+
+  - id: "S03-test-pflicht"
+    name: "Fertigstellungskriterien einer Uebung"
+    prompt: |
+      Wann gilt eine Workshop-Uebung als fertig und kann committed werden?
+      Welche Schritte sind Pflicht vor dem Commit?
+    erwartete_merkmale:
+      - text: "Test auf echtem Cluster als Pflicht"
+        schluesselwoerter: ["Cluster", "testen", "ausgefuehrt", "TEST", "echten"]
+      - text: "Agenda eintragen erwaehnt"
+        schluesselwoerter: ["Agenda", "README", "eintragen"]
+      - text: "Aufraeumen getestet"
+        schluesselwoerter: ["Aufraeumen", "funktioniert", "delete"]
+
+  - id: "S04-dateikonventionen"
+    name: "Datei- und Formatkonventionen"
+    prompt: |
+      Welche Dateiendung sollen Kubernetes-Manifest-Dateien haben?
+      Wie werden Manifest-Dateien nummeriert?
+      Darf ich Umlaute in Dateien verwenden?
+    erwartete_merkmale:
+      - text: "Dateiendung .yml (nicht .yaml)"
+        schluesselwoerter: [".yml"]
+      - text: "Nummerierung mit fuehrender Null"
+        schluesselwoerter: ["01-", "02-", "nummerieren"]
+      - text: "Keine Umlaute"
+        schluesselwoerter: ["Umlaute", "ae", "oe", "ue", "keine"]

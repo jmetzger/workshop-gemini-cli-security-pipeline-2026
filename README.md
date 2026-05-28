@@ -27,9 +27,9 @@
      * DORA-Nachweis: Was die Pipeline automatisch produziert
 
   1. Skill-Regression automatisch erkennen (Hermes 2.0)
-     * [Phase 1 — Reflective Phase: Golden Baseline erstellen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-01-baseline/README.md)
-     * [Phase 2 — Execution in Sandbox: Skill ausfuehren & testen](../reverse-engineer-hermes-2-0-skills-improvement/uebung-02-regression/README.md)
-     * [Phase 3 — Independent Verification: Gemini-Judge bewertet](../reverse-engineer-hermes-2-0-skills-improvement/uebung-03-pipeline/README.md)
+     * [Phase 1 — Reflective Phase: Golden Baseline erstellen](hermes-skill-regression/uebung-01-baseline/README.md)
+     * [Phase 2 — Execution in Sandbox: Skill ausfuehren & testen](hermes-skill-regression/uebung-02-regression/README.md)
+     * [Phase 3 — Independent Verification: Gemini-Judge bewertet](hermes-skill-regression/uebung-03-pipeline/README.md)
 
   1. KI-Nutzung messen — Sind wir schneller geworden?
      * [Velocity-Messung: Cycle Time Vorher/Nachher mit GitLab](docs/ki-velocity-messung.md)

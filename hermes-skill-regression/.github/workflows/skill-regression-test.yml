@@ -1,0 +1,178 @@
+name: Skill Regression Test (Hermes 2.0 Pipeline)
+
+on:
+  push:
+    paths:
+      - 'skills/**/*.md'
+      - '.claude/skills/**/*.md'
+  pull_request:
+    paths:
+      - 'skills/**/*.md'
+      - '.claude/skills/**/*.md'
+  workflow_dispatch:
+    inputs:
+      skill_path:
+        description: 'Pfad zur Skill-Datei (relativ zum Repo-Root)'
+        required: true
+        default: 'skills/workshop-training/SKILL.md'
+
+env:
+  GEMINI_MODEL: gemini-2.0-flash
+  PYTHON_VERSION: '3.11'
+
+jobs:
+
+  # ─────────────────────────────────────────────
+  # HERMES PHASE 1: Baseline laden / erstellen
+  # ─────────────────────────────────────────────
+  phase-1-baseline:
+    name: "Phase 1: Baseline laden"
+    runs-on: ubuntu-latest
+    outputs:
+      baseline_exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Suche gespeicherte Baseline im Repo
+        id: check
+        run: |
+          if [ -f "baseline/baseline_meta.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Baseline gefunden: $(cat baseline/baseline_meta.json | python3 -c 'import json,sys; m=json.load(sys.stdin); print(m[\"erstellt_am\"])')"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Keine Baseline vorhanden - wird in Phase 1 erstellt"
+          fi
+
+      - name: Erstelle Baseline (falls nicht vorhanden)
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          pip install google-generativeai pyyaml -q
+          python uebung-01-baseline/scripts/01_create_baseline.py
+
+      - name: Speichere Baseline als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-baseline
+          path: baseline/
+          retention-days: 90
+
+  # ─────────────────────────────────────────────
+  # HERMES PHASE 2: Skill mit Gemini ausfuehren
+  # ─────────────────────────────────────────────
+  phase-2-run-skill:
+    name: "Phase 2: Skill ausfuehren"
+    runs-on: ubuntu-latest
+    needs: phase-1-baseline
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lade Baseline-Artefakt
+        uses: actions/download-artifact@v4
+        with:
+          name: skill-baseline
+          path: baseline/
+
+      - name: Python Setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Installiere Abhaengigkeiten
+        run: pip install google-generativeai pyyaml -q
+
+      - name: Ermittle geaenderte Skill-Dateien
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "files=${{ inputs.skill_path }}" >> $GITHUB_OUTPUT
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- '*.md' | grep -E 'skills/' | tr '\n' ' ')
+            echo "files=${CHANGED}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fuehre Test-Szenarien fuer geaenderte Skills aus
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CHANGED_SKILLS: ${{ steps.changed.outputs.files }}
+        run: |
+          python uebung-03-pipeline/scripts/03_run_scenarios.py
+
+      - name: Speichere neue Outputs als Artefakt
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-outputs-new
+          path: outputs/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # HERMES PHASE 3: Unabhaengiger Gemini-Judge
+  # ─────────────────────────────────────────────
+  phase-3-judge:
+    name: "Phase 3: Gemini-Judge (Independent Verification)"
+    runs-on: ubuntu-latest
+    needs: phase-2-run-skill
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lade Baseline
+        uses: actions/download-artifact@v4
+        with:
+          name: skill-baseline
+          path: baseline/
+
+      - name: Lade neue Outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: skill-outputs-new
+          path: outputs/
+
+      - name: Python Setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Installiere Abhaengigkeiten
+        run: pip install google-generativeai pyyaml -q
+
+      - name: Fuehre Gemini-Judge aus
+        id: judge
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python uebung-03-pipeline/scripts/03_judge.py > judge_result.json
+          cat judge_result.json
+
+      - name: Pruefe Ergebnis (Constraint Gate)
+        run: |
+          RESULT=$(python3 -c "import json; r=json.load(open('judge_result.json')); print(r['overall_result'])")
+          SCORE=$(python3 -c "import json; r=json.load(open('judge_result.json')); print(r['avg_score'])")
+          echo "Judge-Ergebnis: $RESULT (Score: $SCORE/10)"
+
+          if [ "$RESULT" = "FAIL" ]; then
+            echo ""
+            echo "REGRESSION ERKANNT!"
+            echo "Die Skill-Aenderung veraendert das Verhalten."
+            echo "Bitte die Regressionen beheben bevor dieser PR gemergt werden kann."
+            python3 -c "
+          import json
+          r = json.load(open('judge_result.json'))
+          for detail in r.get('details', []):
+              if detail['urteil']['result'] == 'FAIL':
+                  print(f\"  Szenario {detail['szenario']}: FAIL ({detail['urteil']['score']}/10)\")
+                  for reg in detail['urteil'].get('regressionen', []):
+                      print(f\"    - {reg}\")
+          "
+            exit 1
+          fi
+
+          echo "Keine Regressionen gefunden. Skill-Aenderung kann gemergt werden."
+
+      - name: Speichere Judge-Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-report
+          path: judge_result.json
+        if: always()
