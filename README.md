@@ -19,6 +19,9 @@
      * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
      * [Guardrails setzen und pruefen](docs/uebung-llm-injection.md#guardrails-pruefen--verifikation-mit-tests)
 
+  1. Gemini CLI Hooks — Guardrails als Extension einhaengen
+     * [Uebung: BeforeTool / AfterTool Hooks konfigurieren und testen](docs/uebung-hooks-guardrails.md)
+
   1. Skill-Regression automatisch erkennen (Hermes 2.0)
      * [Phase 1 — Reflective Phase: Golden Baseline erstellen](hermes-skill-regression/uebung-01-baseline/README.md)
      * [Phase 2 — Execution in Sandbox: Skill ausfuehren & testen](hermes-skill-regression/uebung-02-regression/README.md)
