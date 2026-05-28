@@ -315,6 +315,47 @@ unerwartete Aktionen initiiert:
 Bereits aktiv durch `--network none --read-only` in der Container-Konfiguration.
 Verhindert Exfiltration auch wenn Ebene 1 und 2 versagt haben.
 
+### Guardrails pruefen — Verifikation mit Tests
+
+Nach dem Setzen der Guardrails pruefen, ob sie wirklich greifen.
+Das Testskript prueft drei Kategorien:
+
+| Kategorie | Was wird getestet |
+|-----------|-------------------|
+| Netzwerk | `--network none` blockiert curl und DNS-Lookups |
+| Dateisystem | `--read-only` verhindert Schreiben in `/` und `/etc`; `/tmp` via tmpfs erreichbar |
+| Privileges | `sudo` nicht verfuegbar; `--cap-drop ALL` funktioniert |
+
+```
+bash tests/guardrails/run.sh
+```
+
+Erwartete Ausgabe:
+
+```
+=== Guardrail Tests (Ebene 1 — Sandbox): ghcr.io/google/gemini-cli:latest ===
+
+-- Netzwerk-Guardrails --
+PASS: Netzwerk geblockt mit --network none
+PASS: DNS geblockt mit --network none
+
+-- Dateisystem-Guardrails --
+PASS: Filesystem read-only mit --read-only
+PASS: /etc nicht beschreibbar
+PASS: /tmp beschreibbar via tmpfs (Gemini CLI braucht das)
+
+-- Privilege-Guardrails --
+PASS: sudo nicht verfuegbar
+PASS: Container laeuft ohne Capabilities (--cap-drop ALL)
+
+-- Zusammenfassung --
+PASS: 7 | FAIL: 0 | WARN: 0
+```
+
+Ein `FAIL` hier bedeutet: die Sandbox haelt nicht — unabhaengig davon wie gut
+System-Prompt und Tool-Allowlist konfiguriert sind. Erst wenn alle drei Ebenen
+PASS zeigen, ist der Schutz vollstaendig.
+
 ---
 
 ## Zusammenfassung

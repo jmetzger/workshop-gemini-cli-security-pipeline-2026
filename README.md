@@ -17,6 +17,7 @@
 
   1. Verstehen, messen, Baseline setzen
      * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
+     * [Guardrails setzen und pruefen](docs/uebung-llm-injection.md#guardrails-pruefen--verifikation-mit-tests)
 
   1. Automatisiert verbessern — Pipeline als Verbesserungsmotor
      * GitLab Pipeline aufsetzen
