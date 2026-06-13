@@ -7,6 +7,7 @@
 
   1. Gemini CLI absichern: Zentrale Security-Settings
      * [Uebung: Gemini CLI absichern ueber zentrale Settings](docs/uebung-gemini-cli-absichern.md)
+     * [Warum agy (antigravity) kein Ersatz fuer gemini --sandbox ist](docs/warum-agy-kein-sandbox-ersatz.md)
 
   1. Gehaertetes Gemini-CLI-Image bauen
      * [Uebung: Image lokal bauen, scannen und haerten](docs/uebung-image-haerten.md)
