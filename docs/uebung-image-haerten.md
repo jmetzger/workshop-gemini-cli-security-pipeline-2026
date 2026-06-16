@@ -38,18 +38,27 @@ Dockerfile anlegen — mit zwei absichtlichen Schwachstellen:
 # vi Dockerfile
 
 # Schwachstelle 1: veraltetes, ungepatchtes Basisimage mit bekannten CVEs
-FROM node:18.0.0
+FROM node:20.9.0
 
 WORKDIR /app
 
+# Workspace package.json Dateien fuer npm ci (gemini-cli ist ein Monorepo)
 COPY package*.json ./
-RUN npm ci --omit=dev
+COPY packages/cli/package*.json ./packages/cli/
+COPY packages/core/package*.json ./packages/core/
+COPY packages/devtools/package*.json ./packages/devtools/
+COPY packages/sdk/package*.json ./packages/sdk/
+COPY packages/test-utils/package*.json ./packages/test-utils/
+COPY packages/a2a-server/package*.json ./packages/a2a-server/
+COPY packages/vscode-ide-companion/package*.json ./packages/vscode-ide-companion/
+COPY packages/vscode-ide-companion/scripts/ ./packages/vscode-ide-companion/scripts/
 
-# Schwachstelle 2: kein .dockerignore — .env und service-account.json
-# landen stillschweigend im Image
+RUN HUSKY=0 npm ci --ignore-scripts
+
+# Schwachstelle 2: kein .dockerignore — .env landet stillschweigend im Image
 COPY . .
 
-RUN npm run build 2>/dev/null || true
+RUN HUSKY=0 npm run bundle
 
 USER node
 ENTRYPOINT ["node", "bundle/gemini.js"]
@@ -89,12 +98,12 @@ Trivy findet beide Schwachstellen. Erwartete Ausgabe (gekuerzt):
 ```
 gemini-cli:insecure (debian 11)
 
-node:18.0.0 — CVE-Zusammenfassung
+node:20.0.0 — CVE-Zusammenfassung
 ┌─────────────────┬──────────────────┬──────────┬────────────────────────────┐
 │ Library         │ Vulnerability    │ Severity │ Title                      │
 ├─────────────────┼──────────────────┼──────────┼────────────────────────────┤
-│ openssl         │ CVE-2022-0778    │ HIGH     │ Infinite loop in BN_mod_sqrt│
-│ zlib            │ CVE-2022-37434   │ CRITICAL │ Heap buffer overflow        │
+│ openssl         │ CVE-2023-0286    │ HIGH     │ X.400 type confusion attack │
+│ libcurl4        │ CVE-2023-23914   │ CRITICAL │ HSTS bypass via IDN        │
 │ ...             │ ...              │ HIGH     │ ...                        │
 └─────────────────┴──────────────────┴──────────┴────────────────────────────┘
 
@@ -238,9 +247,19 @@ FROM node:22-slim
 WORKDIR /app
 
 COPY --chown=node:node package*.json ./
-RUN npm ci --omit=dev
+COPY --chown=node:node packages/cli/package*.json ./packages/cli/
+COPY --chown=node:node packages/core/package*.json ./packages/core/
+COPY --chown=node:node packages/devtools/package*.json ./packages/devtools/
+COPY --chown=node:node packages/sdk/package*.json ./packages/sdk/
+COPY --chown=node:node packages/test-utils/package*.json ./packages/test-utils/
+COPY --chown=node:node packages/a2a-server/package*.json ./packages/a2a-server/
+COPY --chown=node:node packages/vscode-ide-companion/package*.json ./packages/vscode-ide-companion/
+COPY --chown=node:node packages/vscode-ide-companion/scripts/ ./packages/vscode-ide-companion/scripts/
+
+RUN HUSKY=0 npm ci --ignore-scripts
+
 COPY --chown=node:node . .
-RUN npm run build 2>/dev/null || true
+RUN HUSKY=0 npm run bundle
 
 USER node
 ENTRYPOINT ["node", "bundle/gemini.js"]
@@ -279,7 +298,7 @@ beim Container-Start, nicht im Image selbst, und koennen in einem Folge-MR angeg
 
 | Schwachstelle | Warum nicht offensichtlich | Wie gefunden | Fix |
 |---|---|---|---|
-| Veraltetes Basisimage `node:18.0.0` | Gepinnte Version wirkt "stabil" | Trivy CVE-Scan | `node:22-slim` verwenden |
+| Veraltetes Basisimage `node:20.9.0` | Gepinnte Version wirkt "stabil" | Trivy CVE-Scan | `node:22-slim` verwenden |
 | `GEMINI_API_KEY` in `.env` im Image | Wurde nie explizit `ADD`-ed — nur `COPY . .` | Trivy Secret-Scan | `.dockerignore` anlegen |
 | Container laeuft als root | node-Images starten als root wenn kein `USER` gesetzt | CIS-Scan (Check 4.1) | `USER node` ins Dockerfile |
 
