@@ -24,7 +24,20 @@ API-Key als Umgebungsvariable ablegen (wie er in einem echten Projekt vorkommen 
 
 ```
 cat > .env <<'EOF'
-GEMINI_API_KEY=AIzaSyFakeKeyForDemonstrationOnly1234567
+GEMINI_API_KEY=AIzaSyRnFq8tLvPzX9dK3hJmW7oBqE1gY6cAi4z
+EOF
+```
+
+Trivy kennt den Gemini-API-Key-Format nicht von Haus aus — wir legen eine eigene Erkennungsregel an:
+
+```
+cat > trivy-secret.yaml <<'EOF'
+rules:
+  - id: gemini-api-key
+    category: GOOGLE
+    title: Gemini API Key
+    severity: CRITICAL
+    regex: 'GEMINI_API_KEY\s*=\s*AIza[0-9A-Za-z\-_]{35}'
 EOF
 ```
 
@@ -73,7 +86,7 @@ docker build -t gemini-cli:insecure .
 Kurz pruefen, dass die Datei wirklich im Image ist:
 
 ```
-docker run --rm gemini-cli:insecure cat /app/.env
+docker run --rm --entrypoint /bin/sh gemini-cli:insecure -c "cat /app/.env"
 ```
 
 Der API-Key ist sichtbar — obwohl er nie bewusst "hinzugefuegt" wurde.
@@ -87,32 +100,33 @@ Trivy starten (kein Install noetig — laeuft als Container):
 ```
 docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $(pwd)/trivy-secret.yaml:/trivy-secret.yaml \
   aquasec/trivy:latest \
   image --severity HIGH,CRITICAL \
   --scanners vuln,secret \
+  --secret-config /trivy-secret.yaml \
   gemini-cli:insecure
 ```
 
 Trivy findet beide Schwachstellen. Erwartete Ausgabe (gekuerzt):
 
 ```
-gemini-cli:insecure (debian 11)
+gemini-cli:insecure (debian 12.2)
 
-node:20.0.0 — CVE-Zusammenfassung
+node:20.9.0 — CVE-Zusammenfassung
 ┌─────────────────┬──────────────────┬──────────┬────────────────────────────┐
 │ Library         │ Vulnerability    │ Severity │ Title                      │
 ├─────────────────┼──────────────────┼──────────┼────────────────────────────┤
-│ openssl         │ CVE-2023-0286    │ HIGH     │ X.400 type confusion attack │
-│ libcurl4        │ CVE-2023-23914   │ CRITICAL │ HSTS bypass via IDN        │
+│ openssl         │ CVE-2026-31789   │ CRITICAL │ Heap buffer overflow        │
+│ openssh-client  │ CVE-2024-6387    │ HIGH     │ regreSSHion: RCE/DoS       │
 │ ...             │ ...              │ HIGH     │ ...                        │
 └─────────────────┴──────────────────┴──────────┴────────────────────────────┘
 
-Secrets found:
-┌──────────────────────────────┬──────────┬──────────────────────────────────┐
-│ File                         │ Severity │ Title                            │
-├──────────────────────────────┼──────────┼──────────────────────────────────┤
-│ /app/.env                    │ HIGH     │ Google API Key detected           │
-└──────────────────────────────┴──────────┴──────────────────────────────────┘
+app/.env (secrets)
+===================
+CRITICAL: GOOGLE (gemini-api-key)
+ Gemini API Key
+ app/.env:1
 ```
 
 ---
@@ -160,6 +174,7 @@ trivy-scan:
         --exit-code 1
         --severity HIGH,CRITICAL
         --scanners vuln,secret
+        --secret-config $CI_PROJECT_DIR/trivy-secret.yaml
         $IMAGE_NAME:$IMAGE_TAG
   artifacts:
     when: always
@@ -214,7 +229,7 @@ CIS Pass-Rate: 40% (4/10 Checks bestanden)
 Pipeline pushen:
 
 ```
-git add Dockerfile .gitlab-ci.yml
+git add Dockerfile .gitlab-ci.yml trivy-secret.yaml
 git commit -m "build: initial Gemini CLI image"
 git push
 ```
