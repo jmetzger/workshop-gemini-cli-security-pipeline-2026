@@ -20,25 +20,11 @@ git clone https://github.com/google-gemini/gemini-cli src
 cd src
 ```
 
-Simulierten GCP-Service-Account anlegen (wie er in einem echten Projekt vorkommen wuerde):
+API-Key als Umgebungsvariable ablegen (wie er in einem echten Projekt vorkommen wuerde):
 
 ```
 cat > .env <<'EOF'
-# Google Cloud credentials fuer lokale Entwicklung
-GOOGLE_APPLICATION_CREDENTIALS=service-account.json
-EOF
-
-cat > service-account.json <<'EOF'
-{
-  "type": "service_account",
-  "project_id": "my-gemini-project",
-  "private_key_id": "abc123def456",
-  "private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA2a2rwplBQLzHPZe5TNJG\n-----END RSA PRIVATE KEY-----\n",
-  "client_email": "gemini-runner@my-gemini-project.iam.gserviceaccount.com",
-  "client_id": "112233445566778899",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token"
-}
+GEMINI_API_KEY=AIzaSyFakeKeyForDemonstrationOnly1234567
 EOF
 ```
 
@@ -78,10 +64,10 @@ docker build -t gemini-cli:insecure .
 Kurz pruefen, dass die Datei wirklich im Image ist:
 
 ```
-docker run --rm gemini-cli:insecure cat /app/service-account.json
+docker run --rm gemini-cli:insecure cat /app/.env
 ```
 
-Der Service-Account-Key ist sichtbar — obwohl er nie bewusst "hinzugefuegt" wurde.
+Der API-Key ist sichtbar — obwohl er nie bewusst "hinzugefuegt" wurde.
 
 ---
 
@@ -116,8 +102,7 @@ Secrets found:
 ┌──────────────────────────────┬──────────┬──────────────────────────────────┐
 │ File                         │ Severity │ Title                            │
 ├──────────────────────────────┼──────────┼──────────────────────────────────┤
-│ /app/service-account.json    │ CRITICAL │ GCP Service Account Key detected │
-│ /app/.env                    │ HIGH     │ Google credential file reference │
+│ /app/.env                    │ HIGH     │ Google API Key detected           │
 └──────────────────────────────┴──────────┴──────────────────────────────────┘
 ```
 
@@ -261,12 +246,11 @@ USER node
 ENTRYPOINT ["node", "bundle/gemini.js"]
 ```
 
-Service-Account-Credentials werden zur Laufzeit per Volume oder Secret uebergeben — nie ins Image gebacken:
+Der API-Key wird zur Laufzeit per Umgebungsvariable uebergeben — nie ins Image gebacken:
 
 ```
 docker run --rm \
-  -v $HOME/.config/gcloud/application_default_credentials.json:/secrets/sa.json:ro \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json \
+  -e GEMINI_API_KEY=$GEMINI_API_KEY \
   gemini-cli:secure --version
 ```
 
@@ -296,7 +280,7 @@ beim Container-Start, nicht im Image selbst, und koennen in einem Folge-MR angeg
 | Schwachstelle | Warum nicht offensichtlich | Wie gefunden | Fix |
 |---|---|---|---|
 | Veraltetes Basisimage `node:18.0.0` | Gepinnte Version wirkt "stabil" | Trivy CVE-Scan | `node:22-slim` verwenden |
-| `service-account.json` im Image | Wurde nie explizit `ADD`-ed — nur `COPY . .` | Trivy Secret-Scan | `.dockerignore` anlegen |
+| `GEMINI_API_KEY` in `.env` im Image | Wurde nie explizit `ADD`-ed — nur `COPY . .` | Trivy Secret-Scan | `.dockerignore` anlegen |
 | Container laeuft als root | node-Images starten als root wenn kein `USER` gesetzt | CIS-Scan (Check 4.1) | `USER node` ins Dockerfile |
 
 **Lernpunkt:** `COPY . .` kopiert alles — auch Dateien, die niemand bewusst hinzufuegen wollte.
