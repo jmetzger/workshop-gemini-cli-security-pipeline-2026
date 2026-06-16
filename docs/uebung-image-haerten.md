@@ -253,31 +253,68 @@ node_modules
 *.log
 ```
 
-Dockerfile auf aktuelles, gepatchtes Basisimage umstellen:
+Dockerfile auf Multi-Stage-Build mit aktuellem, gepatchtem Basisimage umstellen.
+Der Multi-Stage-Ansatz hat einen weiteren Sicherheitsvorteil: Stage 2 erhaelt
+nur die gepackten npm-Artefakte — selbst wenn versehentlich sensitive Dateien
+in den Build-Kontext geraten, landen sie nie in der finalen Runtime-Stage.
 
 ```
 # vi Dockerfile
-FROM node:22-slim
 
-WORKDIR /app
+# ---- Stage 1: Builder ----
+FROM node:22-slim AS builder
 
-COPY --chown=node:node package*.json ./
-COPY --chown=node:node packages/cli/package*.json ./packages/cli/
-COPY --chown=node:node packages/core/package*.json ./packages/core/
-COPY --chown=node:node packages/devtools/package*.json ./packages/devtools/
-COPY --chown=node:node packages/sdk/package*.json ./packages/sdk/
-COPY --chown=node:node packages/test-utils/package*.json ./packages/test-utils/
-COPY --chown=node:node packages/a2a-server/package*.json ./packages/a2a-server/
-COPY --chown=node:node packages/vscode-ide-companion/package*.json ./packages/vscode-ide-companion/
-COPY --chown=node:node packages/vscode-ide-companion/scripts/ ./packages/vscode-ide-companion/scripts/
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+COPY package*.json ./
+COPY packages/cli/package*.json ./packages/cli/
+COPY packages/core/package*.json ./packages/core/
+COPY packages/devtools/package*.json ./packages/devtools/
+COPY packages/sdk/package*.json ./packages/sdk/
+COPY packages/test-utils/package*.json ./packages/test-utils/
+COPY packages/a2a-server/package*.json ./packages/a2a-server/
+COPY packages/vscode-ide-companion/package*.json ./packages/vscode-ide-companion/
+COPY packages/vscode-ide-companion/scripts/ ./packages/vscode-ide-companion/scripts/
 
 RUN HUSKY=0 npm ci --ignore-scripts
 
-COPY --chown=node:node . .
-RUN HUSKY=0 npm run bundle
+COPY packages/ ./packages/
+COPY tsconfig*.json ./
+COPY eslint.config.js ./
+COPY scripts/ ./scripts/
+COPY esbuild.config.js ./
+
+RUN HUSKY=0 npm run build && \
+    npm pack -w packages/core --pack-destination packages/core/dist/ && \
+    npm pack -w packages/cli --pack-destination packages/cli/dist/
+
+# ---- Stage 2: Runtime ----
+FROM node:22-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  git curl socat ca-certificates \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /usr/local/share/npm-global \
+  && chown -R node:node /usr/local/share/npm-global
+ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
+ENV PATH=$PATH:/usr/local/share/npm-global/bin
 
 USER node
-ENTRYPOINT ["node", "bundle/gemini.js"]
+
+COPY --from=builder --chown=node:node /build/packages/cli/dist/google-gemini-cli-*.tgz /tmp/gemini-cli.tgz
+COPY --from=builder --chown=node:node /build/packages/core/dist/google-gemini-cli-core-*.tgz /tmp/gemini-core.tgz
+
+RUN npm install -g /tmp/gemini-core.tgz \
+  && npm install -g /tmp/gemini-cli.tgz \
+  && gemini --version > /dev/null \
+  && npm cache clean --force \
+  && rm -f /tmp/gemini-*.tgz
+
+ENTRYPOINT ["/usr/local/share/npm-global/bin/gemini"]
 ```
 
 Der API-Key wird zur Laufzeit per Umgebungsvariable uebergeben — nie ins Image gebacken:
