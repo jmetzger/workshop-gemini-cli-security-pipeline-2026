@@ -1,5 +1,9 @@
 # Workshop: Gemini CLI — Sicher betreiben & automatisiert verbessern (2 Tage)
 
+## Setup
+
+  * [Installation & Voraussetzungen](docs/installation.md) — `bash scripts/install-gemini-cli.sh`
+
 ## Agenda
 
   1. Einstieg
