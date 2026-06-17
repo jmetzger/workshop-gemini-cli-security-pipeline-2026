@@ -154,6 +154,29 @@ beim Container-Start, nicht im Image selbst.
 
 ---
 
+## Lernpunkt: CVEs in Basis-Images bewerten
+
+Trivy scannt das **gesamte** Image — auch Pakete die das Basisimage mitbringt und die
+du als Entwickler nicht kontrollierst. Typisches Beispiel bei `node:22-slim`:
+npm bringt eigene interne Abhaengigkeiten mit (z.B. `picomatch` unter
+`/usr/local/lib/node_modules/npm/`). Trivy meldet dort gefundene CVEs.
+
+**Die richtige Reaktion ist nicht "sofort fixen" — sondern bewerten:**
+
+| Frage | Bewertung |
+|---|---|
+| Ist der CVE in meinem Angriffsvektor? | npm laeuft nicht von aussen erreichbar im Container |
+| Kann ich den Fix selbst einspielen? | Nein — das ist Sache des Basisimage-Maintainers |
+| Gibt es bereits einen Fix? | Wenn nein: `--ignore-unfixed` ist korrekt |
+
+`--ignore-unfixed` ueberspringt CVEs ohne verfuegbaren Fix (`will_not_fix`, `fix_deferred`).
+Das ist keine Kapitulation — es ist eine bewusste, dokumentierte Entscheidung.
+
+Sobald das Basisimage aktualisiert wird und einen Fix enthaelt, schlaegt Trivy wieder an
+und zwingt zur erneuten Bewertung.
+
+---
+
 ## Zusammenfassung
 
 | Job | Zweck | Blockiert Pipeline |
