@@ -125,13 +125,22 @@ icacls "C:\ProgramData\gemini-cli\settings.json" /inheritance:r /grant:r "BUILTI
 
 ---
 
-## Schritt 2: Settings pruefen
-
-Gemini CLI zeigt die aktiven Settings an:
+## Schritt 2: Sandbox prüfen 
 
 ```
-gemini config list
+gemini
 ```
+
+```
+# in gemini -> about
+# Sandbox muss auftauchen 
+/about
+/quit 
+```
+
+
+
+
 
 Oder direkt die Datei lesen lassen:
 
