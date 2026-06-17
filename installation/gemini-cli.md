@@ -7,6 +7,25 @@
 ## Gemini CLI instalieren und starten 
 
 ```
+# Grundeinstellungen vornehmen, so dass er nicht mehr nachfragt
+
+mkdir -p ~/.gemini
+cat > ~/.gemini/settings.json << 'EOF'
+{
+  "ui": {
+    "theme": "Default Light"
+  },
+  "security": {
+    "auth": {
+      "selectedType": "gemini-api-key"
+    }
+  }
+}
+EOF
+```
+
+
+```
 echo 'export COLORTERM=truecolor' >> ~/.bashrc
 source ~/.bashrc
 npm install -g @google/gemini-cli
