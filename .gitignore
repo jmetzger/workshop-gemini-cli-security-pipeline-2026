@@ -38,3 +38,7 @@ Thumbs.db
 gemini-image/
 dist/
 build/
+tests/behavioral/workspace/
+
+# Claude Code
+.claude/
