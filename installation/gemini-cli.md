@@ -1,4 +1,10 @@
-# Gemini installieren 
+# Installation 
+
+## Prerquisites 
+
+  * Docker muss laufen
+
+## Gemini CLI instalieren und starten 
 
 ```
 echo 'export COLORTERM=truecolor' >> ~/.bashrc
@@ -13,8 +19,10 @@ echo "export GEMINI_API_KEY=DEINAPIKEY" >> ~/.env
 ```
 source ~/.env
 mkdir testproject
-cd testproject 
-gemini
+cd testproject
+gemini --sandbox
+# oder 
+gemini --skip-trust --sandbox
 ```
 
 ```
