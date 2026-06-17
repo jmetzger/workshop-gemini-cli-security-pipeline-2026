@@ -37,7 +37,7 @@ echo "export GEMINI_API_KEY=DEINAPIKEY" >> ~/.env
 
 ```
 source ~/.env
-mkdir testproject
+mkdir -p testproject
 cd testproject
 gemini --sandbox
 # oder 
