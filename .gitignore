@@ -1,0 +1,40 @@
+# Secrets — niemals committen
+.env
+*.key
+*.pem
+*.p12
+*.pfx
+
+# SOPS-verschlüsselt (darf committet werden)
+!.env.enc
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Trivy-Cache
+.cache/
+trivy-cache/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lokale Workshop-Artefakte
+gemini-image/
+dist/
+build/
