@@ -46,7 +46,7 @@ gemini --sandbox
 
 ```
 # in gemini-cli
-# ist z.B. TRUECOLOR-Modus aktiviert ?
+# Wird sandbox verwendet ? 
 /about
 ```
 
