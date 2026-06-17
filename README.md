@@ -20,7 +20,7 @@
 
   1. Gemini-CLI-Image auf Sicherheitsluecken scannen
      * [CVE-Scan: Schwachstellen in Paketen und Secrets erkennen](docs/uebung-image-haerten.md#schritt-3-lokal-mit-trivy-scannen)
-     * [CIS-Scan: Docker Benchmark — Konfigurationsqualitaet pruefen](docs/uebung-image-haerten.md#schritt-4-gitlab-cicd-pipeline-mit-trivy)
+     * [CIS-Scan: GitLab CI/CD Pipeline mit Trivy und Kaniko](docs/uebung-gitlab-pipeline.md)
 
   1. LLM-Injections verhinden, testen und analysieren
      * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
