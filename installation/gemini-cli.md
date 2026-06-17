@@ -50,3 +50,7 @@ gemini --sandbox
 /about
 ```
 
+## /about ohne Sandbox 
+
+<img width="1877" height="425" alt="image" src="https://github.com/user-attachments/assets/41c3bac1-c394-4751-add3-fd0cbb41cbbd" />
+
