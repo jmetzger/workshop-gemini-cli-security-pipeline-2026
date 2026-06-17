@@ -22,11 +22,12 @@ mkdir testproject
 cd testproject
 gemini --sandbox
 # oder 
-gemini --skip-trust --sandbox
+# gemini --skip-trust --sandbox
 ```
 
 ```
 # in gemini-cli
+# ist z.B. TRUECOLOR-Modus aktiviert ?
 /about
 ```
 
