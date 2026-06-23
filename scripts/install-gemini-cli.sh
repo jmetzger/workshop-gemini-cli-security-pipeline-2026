@@ -12,19 +12,43 @@ if [ "$(id -u)" -eq 0 ]; then
   fail "Nicht als root ausfuehren. Starte als normaler User: bash scripts/install-gemini-cli.sh"
 fi
 
+export DEBIAN_FRONTEND=noninteractive
+
 echo "========================================"
 echo "  Gemini CLI — Workshop Installations-Setup"
 echo "========================================"
 echo ""
 
-# ── 1. Node.js pruefen (>= 18) ───────────────────────────────────────────────
+# ── 1. Node.js installieren (falls nicht vorhanden oder < 18) ────────────────
 echo ">> Node.js pruefen ..."
+INSTALL_NODE=false
 if ! command -v node &>/dev/null; then
-  fail "Node.js nicht gefunden. Bitte zuerst Node.js >= 18 installieren: https://nodejs.org"
+  INSTALL_NODE=true
+else
+  NODE_VER=$(node --version | sed 's/v//' | cut -d. -f1)
+  if [ "$NODE_VER" -lt 18 ]; then
+    warn "Node.js $NODE_VER gefunden — benoetigt wird >= 18. Installiere Node.js 20 ..."
+    INSTALL_NODE=true
+  fi
 fi
-NODE_VER=$(node --version | sed 's/v//' | cut -d. -f1)
-if [ "$NODE_VER" -lt 18 ]; then
-  fail "Node.js $NODE_VER gefunden — benoetigt wird >= 18. Bitte updaten."
+
+if [ "$INSTALL_NODE" = true ]; then
+  OS_ID=""
+  [ -f /etc/os-release ] && OS_ID=$(. /etc/os-release && echo "$ID")
+  case "$OS_ID" in
+    ubuntu|debian)
+      echo ">> Node.js nicht gefunden — installiere via nodesource ..."
+      curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - 2>/dev/null
+      sudo apt-get install -y nodejs
+      ;;
+    *)
+      if command -v brew &>/dev/null; then
+        brew install node@20
+      else
+        fail "Node.js nicht gefunden. Bitte manuell installieren: https://nodejs.org"
+      fi
+      ;;
+  esac
 fi
 ok "Node.js $(node --version) gefunden"
 
