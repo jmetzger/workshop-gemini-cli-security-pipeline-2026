@@ -14,12 +14,21 @@
 
 ## Schnellstart: Installations-Script ausfuehren
 
+Script: [`scripts/install-gemini-cli.sh`](../scripts/install-gemini-cli.sh)
+
 ```bash
 bash scripts/install-gemini-cli.sh
 ```
 
 Das Script prueft alle Voraussetzungen, installiert Gemini CLI global via npm
 und gibt am Ende konkrete Hinweise fuer den API-Key-Setup aus.
+
+> **Hinweis zu `--allow-scripts`:** npm blockiert seit Version 7 standardmaessig
+> Post-Install-Scripts von Paketen (Schutz vor Supply-Chain-Angriffen). Zwei
+> Abhaengigkeiten von Gemini CLI benoetigen solche Scripts legitimerweise:
+> `@github/keytar` (kompiliert native Binaries fuer System-Keychain) und
+> `node-pty` (Pseudo-Terminal-Emulation). Das Script erlaubt sie explizit nur
+> fuer diese zwei Pakete — alle anderen bleiben geblockt.
 
 ---
 
