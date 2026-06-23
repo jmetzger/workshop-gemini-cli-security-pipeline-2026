@@ -8,6 +8,10 @@ ok()   { echo -e "${GREEN}[OK]${NC}  $*"; }
 warn() { echo -e "${YELLOW}[!]${NC}   $*"; }
 fail() { echo -e "${RED}[FEHLER]${NC} $*"; exit 1; }
 
+if [ "$(id -u)" -eq 0 ]; then
+  fail "Nicht als root ausfuehren. Starte als normaler User: bash scripts/install-gemini-cli.sh"
+fi
+
 echo "========================================"
 echo "  Gemini CLI — Workshop Installations-Setup"
 echo "========================================"
@@ -72,21 +76,76 @@ if [ -f "$REQUIREMENTS" ]; then
     || warn "pip install fehlgeschlagen — bitte manuell ausfuehren: pip install -r $REQUIREMENTS"
 fi
 
-# ── 7. Docker pruefen (optional, fuer Image-Uebungen) ───────────────────────
+# ── 7. Docker installieren (falls nicht vorhanden) ──────────────────────────
 echo ""
-echo ">> Docker pruefen (optional) ..."
+echo ">> Docker pruefen ..."
 if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
   ok "Docker $(docker --version | cut -d' ' -f3 | tr -d ',')"
 else
-  warn "Docker nicht verfuegbar — wird fuer die Image-Haertungs-Uebung benoetigt."
+  OS_ID=""
+  [ -f /etc/os-release ] && OS_ID=$(. /etc/os-release && echo "$ID")
+  case "$OS_ID" in
+    ubuntu|debian)
+      echo ">> Docker nicht gefunden — installiere via docker.com-Repo ..."
+      sudo apt-get install -y ca-certificates curl gnupg lsb-release
+      sudo install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL "https://download.docker.com/linux/${OS_ID}/gpg" \
+        | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      sudo chmod a+r /etc/apt/keyrings/docker.gpg
+      CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME")
+      ARCH=$(dpkg --print-architecture)
+      echo "deb [arch=${ARCH} signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/${OS_ID} ${CODENAME} stable" \
+        | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      sudo apt-get update -qq
+      sudo apt-get install -y docker-ce docker-ce-cli containerd.io \
+        docker-buildx-plugin docker-compose-plugin
+      sudo usermod -aG docker "$USER"
+      ok "Docker installiert — Shell neu starten damit docker-Gruppe greift"
+      ;;
+    *)
+      if command -v brew &>/dev/null; then
+        echo ">> Docker nicht gefunden — installiere via Homebrew ..."
+        brew install --cask docker
+        ok "Docker via Homebrew installiert"
+      else
+        warn "Docker nicht verfuegbar. Manuelle Installation: https://docs.docker.com/engine/install/"
+      fi
+      ;;
+  esac
 fi
 
-# ── 8. Trivy pruefen (optional, fuer CVE-Scan) ──────────────────────────────
+# ── 8. Trivy installieren (falls nicht vorhanden) ───────────────────────────
+echo ""
+echo ">> Trivy pruefen ..."
 if command -v trivy &>/dev/null; then
   ok "Trivy $(trivy --version | head -1)"
 else
-  warn "Trivy nicht gefunden — wird fuer den CVE-Scan benoetigt."
-  warn "Installation: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
+  OS_ID=""
+  [ -f /etc/os-release ] && OS_ID=$(. /etc/os-release && echo "$ID")
+  case "$OS_ID" in
+    ubuntu|debian)
+      echo ">> Trivy nicht gefunden — installiere via aquasecurity-Repo ..."
+      sudo apt-get install -y wget apt-transport-https gnupg
+      wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+        | gpg --dearmor \
+        | sudo tee /etc/apt/trusted.gpg.d/trivy.gpg > /dev/null
+      echo "deb https://aquasecurity.github.io/trivy-repo/deb generic main" \
+        | sudo tee /etc/apt/sources.list.d/trivy.list > /dev/null
+      sudo apt-get update -qq
+      sudo apt-get install -y trivy
+      ok "Trivy $(trivy --version | head -1)"
+      ;;
+    *)
+      if command -v brew &>/dev/null; then
+        echo ">> Trivy nicht gefunden — installiere via Homebrew ..."
+        brew install trivy
+        ok "Trivy $(trivy --version | head -1)"
+      else
+        warn "Trivy nicht gefunden. Manuelle Installation: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
+      fi
+      ;;
+  esac
 fi
 
 # ── 9. Gemini CLI System-Policy anlegen (/etc/gemini-cli/settings.json) ──────

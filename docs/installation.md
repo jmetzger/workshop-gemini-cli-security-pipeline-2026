@@ -28,8 +28,12 @@ und gibt am Ende konkrete Hinweise fuer den API-Key-Setup aus.
 1. **Node.js pruefen** — bricht ab wenn < 18
 2. **Gemini CLI installieren** — `npm install -g @google/gemini-cli`
 3. **Python-Pakete installieren** — `pip install -r hermes-skill-regression/requirements.txt`
-4. **Docker & Trivy pruefen** — Warnung falls nicht vorhanden (nicht blockierend)
-5. **API-Key-Anleitung ausgeben**
+4. **Docker installieren** — falls nicht vorhanden: automatisch via offizielles docker.com-Repo (Ubuntu/Debian) oder Homebrew-Hinweis (macOS)
+5. **Trivy installieren** — falls nicht vorhanden: automatisch via aquasecurity-Repo (Ubuntu/Debian) oder Homebrew (macOS)
+6. **Gemini CLI System-Policy setzen** — `/etc/gemini-cli/settings.json`
+7. **API-Key system-weit eintragen** — `/etc/profile.d/gemini-api.sh`
+
+> **Hinweis:** Das Script darf **nicht als root** ausgefuehrt werden — einzelne Schritte rufen intern `sudo` auf. Start immer als normaler User.
 
 ---
 
@@ -70,12 +74,34 @@ brew install node
 
 ---
 
-## Trivy installieren (fuer CVE-Scan-Uebung)
+## Docker & Trivy installieren
 
-**Ubuntu/Debian:**
+Das Installations-Script erledigt das automatisch:
+
 ```bash
-sudo apt-get install -y wget apt-transport-https gnupg
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+bash scripts/install-gemini-cli.sh
+```
+
+Falls eine manuelle Installation noetig ist:
+
+**Docker (Ubuntu/Debian) — offizielles docker.com-Repo:**
+```bash
+sudo apt-get install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+sudo usermod -aG docker "$USER"
+```
+
+**Trivy (Ubuntu/Debian) — aquasecurity-Repo:**
+```bash
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+  | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/trivy.gpg > /dev/null
 echo "deb https://aquasecurity.github.io/trivy-repo/deb generic main" \
   | sudo tee /etc/apt/sources.list.d/trivy.list
 sudo apt-get update && sudo apt-get install -y trivy
@@ -83,5 +109,6 @@ sudo apt-get update && sudo apt-get install -y trivy
 
 **macOS:**
 ```bash
+brew install --cask docker
 brew install trivy
 ```

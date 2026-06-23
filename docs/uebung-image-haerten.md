@@ -10,6 +10,20 @@ Wir bauen das Gemini-CLI-Image in zwei Stufen:
 
 ---
 
+## Voraussetzungen
+
+Docker und Trivy werden vom Installations-Script automatisch eingerichtet (`bash scripts/install-gemini-cli.sh`).
+
+Nach der Installation muss die `docker`-Gruppe einmalig aktiviert werden — sonst schlaegt `docker build` mit "permission denied" fehl:
+
+```bash
+newgrp docker
+```
+
+> Das Script traegt deinen User zwar in die Gruppe ein, aber die aktuelle Shell-Session weiss davon noch nichts. `newgrp docker` aktiviert die Gruppe sofort ohne Logout.
+
+---
+
 ## Schritt 1: Vorbereitung — Projektstruktur anlegen
 
 ```
