@@ -34,8 +34,8 @@ und gibt am Ende konkrete Hinweise fuer den API-Key-Setup aus.
 
 ## Was das Script tut
 
-1. **Node.js pruefen** — bricht ab wenn < 18
-2. **Gemini CLI installieren** — `npm install -g @google/gemini-cli`
+1. **Node.js pruefen** — installiert Node.js 20 via nodesource falls nicht vorhanden oder < 18
+2. **Gemini CLI installieren** — `sudo npm install -g @google/gemini-cli` → landet direkt in `/usr/bin/gemini`, fuer alle User sofort verfuegbar
 3. **Python-Pakete installieren** — `pip install -r hermes-skill-regression/requirements.txt`
 4. **Docker installieren** — falls nicht vorhanden: automatisch via offizielles docker.com-Repo (Ubuntu/Debian) oder Homebrew-Hinweis (macOS)
 5. **Trivy installieren** — falls nicht vorhanden: automatisch via aquasecurity-Repo (Ubuntu/Debian) oder Homebrew (macOS)
@@ -44,14 +44,23 @@ und gibt am Ende konkrete Hinweise fuer den API-Key-Setup aus.
 
 > **Hinweis:** Das Script darf **nicht als root** ausgefuehrt werden — einzelne Schritte rufen intern `sudo` auf. Start immer als normaler User.
 
+> **Warum `sudo npm install -g`?** Auf Workshop-Servern mit mehreren Usern muss `gemini` fuer jeden Teilnehmer ohne PATH-Konfiguration verfuegbar sein. `sudo npm install -g` legt die Binary direkt in `/usr/bin/` ab — systemweit, in jeder Session, ohne `~/.bashrc`-Anpassungen. Ein user-lokales `~/.npm-global` wuerde pro User einen manuellen `export PATH`-Eintrag erfordern.
+
 ---
 
 ## API-Key einrichten (nach dem Script)
 
 1. Oeffne [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 2. Erstelle einen neuen API-Key
-3. Fuge ihn dauerhaft in dein Shell-Profil ein:
+3. Fuge ihn ein — je nach Kontext:
 
+**Workshop-Server (system-weit fuer alle User):**
+```bash
+echo "export GEMINI_API_KEY='DEIN_KEY_HIER'" | sudo tee /etc/profile.d/gemini-api.sh
+```
+Das Script erledigt das automatisch, wenn `GEMINI_API_KEY` vor dem Aufruf exportiert ist.
+
+**Lokale Entwicklung (nur dein User):**
 ```bash
 echo 'export GEMINI_API_KEY="DEIN_KEY_HIER"' >> ~/.bashrc
 source ~/.bashrc

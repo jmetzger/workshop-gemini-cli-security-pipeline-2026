@@ -58,27 +58,16 @@ if ! command -v npm &>/dev/null; then
 fi
 ok "npm $(npm --version) gefunden"
 
-# ── 3. npm Prefix auf user-writable Verzeichnis setzen (kein sudo noetig) ────
-NPM_PREFIX="$HOME/.npm-global"
-CURRENT_PREFIX=$(npm config get prefix 2>/dev/null || echo "")
-if [[ "$CURRENT_PREFIX" == /usr/* ]] || [[ "$CURRENT_PREFIX" == /usr ]]; then
-  echo ">> npm Prefix anpassen (aktuell: $CURRENT_PREFIX) ..."
-  mkdir -p "$NPM_PREFIX"
-  npm config set prefix "$NPM_PREFIX"
-  ok "npm Prefix gesetzt: $NPM_PREFIX"
-
-  # PATH fuer diese Session setzen
-  export PATH="$NPM_PREFIX/bin:$PATH"
-  warn "PATH nur fuer diese Session gesetzt. Dauerhaft eintragen: export PATH=\"\$HOME/.npm-global/bin:\$PATH\""
-else
-  export PATH="$NPM_PREFIX/bin:$PATH"
-fi
-
-# ── 4. Gemini CLI installieren ───────────────────────────────────────────────
+# ── 3. Gemini CLI system-weit installieren (sudo) ────────────────────────────
+# sudo npm install -g legt die Binary direkt in /usr/local/bin/ ab —
+# kein PATH-Hack noetig, funktioniert fuer alle User sofort.
 echo ""
-echo ">> Gemini CLI installieren ..."
-npm install -g @google/gemini-cli --allow-scripts=@github/keytar,node-pty
-ok "Gemini CLI installiert: $(gemini --version 2>/dev/null || echo 'Version nicht auslesbar')"
+echo ">> Gemini CLI installieren (system-weit via sudo npm) ..."
+sudo npm install -g @google/gemini-cli --allow-scripts=@github/keytar,node-pty
+if ! command -v gemini &>/dev/null; then
+  fail "Gemini CLI Binary nicht gefunden — 'sudo npm install -g' fehlgeschlagen"
+fi
+ok "Gemini CLI installiert: $(gemini --version)"
 
 # ── 5. Python pruefen (fuer Workshop-Tests) ──────────────────────────────────
 echo ""
