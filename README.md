@@ -1,16 +1,12 @@
 # Workshop: Gemini CLI — Sicher betreiben & automatisiert verbessern (2 Tage)
 
+## Agenda 
+
  1. Einstieg
-     * [DORA-Einordnung](docs/dora-overview.md)
+    * [DORA-Einordnung](docs/dora-overview.md)
 
-
-
-
-
-
-## Backlog - Setup
-
-  * [Installation & Voraussetzungen](docs/installation.md) — `bash scripts/install-gemini-cli.sh`
+ 1. Installation (gemini) - bereits vorbereitet
+    * [Installation & Voraussetzungen](docs/installation.md) — `bash scripts/install-gemini-cli.sh`
 
 ## Backlog - Agenda
 
