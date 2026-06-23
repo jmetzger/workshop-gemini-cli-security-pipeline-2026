@@ -53,7 +53,7 @@ fi
 # ── 4. Gemini CLI installieren ───────────────────────────────────────────────
 echo ""
 echo ">> Gemini CLI installieren ..."
-npm install -g @google/gemini-cli
+npm install -g @google/gemini-cli --allow-scripts=@github/keytar,node-pty
 ok "Gemini CLI installiert: $(gemini --version 2>/dev/null || echo 'Version nicht auslesbar')"
 
 # ── 5. Python pruefen (fuer Workshop-Tests) ──────────────────────────────────
