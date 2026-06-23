@@ -72,8 +72,8 @@ REQUIREMENTS="$SCRIPT_DIR/../hermes-skill-regression/requirements.txt"
 if [ -f "$REQUIREMENTS" ]; then
   echo ""
   echo ">> Python-Pakete installieren (hermes-skill-regression) ..."
-  python3 -m pip install -q -r "$REQUIREMENTS" && ok "Python-Pakete installiert" \
-    || warn "pip install fehlgeschlagen — bitte manuell ausfuehren: pip install -r $REQUIREMENTS"
+  python3 -m pip install -q --break-system-packages -r "$REQUIREMENTS" && ok "Python-Pakete installiert" \
+    || warn "pip install fehlgeschlagen — bitte manuell ausfuehren: pip install --break-system-packages -r $REQUIREMENTS"
 fi
 
 # ── 7. Docker installieren (falls nicht vorhanden) ──────────────────────────
