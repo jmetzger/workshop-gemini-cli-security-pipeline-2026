@@ -6,7 +6,7 @@
     * [DORA-Einordnung](docs/dora-overview.md)
 
  1. Installation (gemini) - bereits vorbereitet
-    * [Installation & Voraussetzungen](docs/installation.md) — `bash scripts/install-gemini-cli.sh`
+    * [Installation & Voraussetzungen - bash scripts/install-gemini-cli.sh](docs/installation.md)
 
 ## Backlog - Agenda
 
