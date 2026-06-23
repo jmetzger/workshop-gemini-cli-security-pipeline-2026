@@ -14,7 +14,7 @@
 
 ## Backlog - Agenda
 
-  1. Einstieg
+  1. (Einstieg)
      * [DORA-Einordnung](docs/dora-overview.md)
     
   1. Überlegungen Antigravity cli
