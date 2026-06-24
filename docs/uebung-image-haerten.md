@@ -151,6 +151,8 @@ CRITICAL: GOOGLE (gemini-api-key)
 
 ## Schritt 4: Image haerten und Pipeline gruen machen
 
+### 4a: Secret-Leak beheben — `.dockerignore`
+
 `.dockerignore` anlegen — verhindert, dass sensitive Dateien ins Image geraten:
 
 ```
@@ -175,6 +177,76 @@ WORKDIR /app
 COPY . .
 ```
 
+Verifizieren — `.env` darf nicht mehr im Image sein:
+
+```bash
+docker build -t gemini-cli:secure .
+docker run --rm --entrypoint /bin/sh gemini-cli:secure -c "cat /app/.env 2>&1 || echo 'nicht vorhanden'"
+```
+
+---
+
+### 4b: Upstream-CVEs dokumentieren — `.trivyignore`
+
+Nach dem Fix bleibt noch ein Problem: die 11 Node.js-CVEs (`tar`, `minimatch`, `glob`,
+`cross-spawn`) stecken in Googles eigenem bundled npm-Paket. Wir koennen sie nicht
+einfach patchen ohne das CLI zu brechen — wir sind auf ein Google-Update angewiesen.
+
+Die Loesung: `.trivyignore` — explizite, dokumentierte Akzeptanz des Restrisikos.
+
+```
+# vi .trivyignore
+
+# CVEs in bundled npm packages of google/gemini-cli-sandbox:0.47.0
+# These are transitive dependencies inside the upstream image —
+# not directly fixable by us. Upstream tracking:
+#   https://github.com/google-gemini/gemini-cli/issues
+# Accepted risk: sandboxed CLI tool, no user-facing HTTP endpoints.
+# Review: when sandbox:0.48.0 releases stable.
+
+# cross-spawn
+CVE-2024-21538
+
+# glob
+CVE-2025-64756
+
+# tar
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802
+
+# minimatch
+CVE-2026-26996
+CVE-2026-27903
+CVE-2026-27904
+```
+
+> **Warum ist das kein Freifahrtschein?** `.trivyignore` zwingt zur expliziten
+> Entscheidung pro CVE-ID. Blindes `--skip-vuln` wuerde alles verstecken —
+> `.trivyignore` dokumentiert genau was akzeptiert wird und warum.
+
+Jetzt nochmal lokal scannen — diesmal mit beiden Korrekturen:
+
+```bash
+trivy image \
+  --severity HIGH,CRITICAL \
+  --scanners vuln,secret \
+  --ignore-unfixed \
+  --secret-config trivy-secret.yaml \
+  gemini-cli:secure
+```
+
+Erwartete Ausgabe:
+
+```
+Total: 0 (HIGH: 0, CRITICAL: 0)
+
+No secrets detected.
+```
+
 Der API-Key wird zur Laufzeit per Umgebungsvariable uebergeben — nie ins Image gebacken:
 
 ```bash
@@ -186,8 +258,8 @@ docker run --rm \
 Commit und Push — Pipeline soll jetzt durchlaufen:
 
 ```bash
-git add Dockerfile .dockerignore
-git commit -m "fix: harden image — update base version, add .dockerignore"
+git add Dockerfile .dockerignore .trivyignore
+git commit -m "fix: harden image — add .dockerignore, document upstream CVEs in .trivyignore"
 git push
 ```
 
@@ -208,11 +280,12 @@ beim Container-Start, nicht im Image selbst, und koennen in einem Folge-MR angeg
 
 | Schwachstelle | Warum nicht offensichtlich | Wie gefunden | Fix |
 |---|---|---|---|
-| 228 CVEs im aktuellen Image (14 CRITICAL) | Auch die neueste Version ist nicht CVE-frei | Trivy CVE-Scan | `will_not_fix` dokumentieren, `fixed` beheben |
+| OS-CVEs (`will_not_fix`) | Debian stellt keinen Patch bereit | Trivy CVE-Scan | `--ignore-unfixed` in Pipeline |
+| Node.js-CVEs in Googles Bundle (`fixed`) | Upstream-Abhaengigkeit, nicht direkt patchbar | Trivy CVE-Scan | `.trivyignore` mit Begruendung |
 | `GEMINI_API_KEY` in `.env` im Image | Wurde nie explizit `ADD`-ed — nur `COPY . .` | Trivy Secret-Scan | `.dockerignore` anlegen |
 | Container laeuft als root | Standard bei vielen Base-Images | [CIS-Scan in GitLab CI](uebung-gitlab-pipeline.md) (Check 4.1) | Im offiziellen Image bereits `USER node` |
 
-**Lernpunkt:** `COPY . .` kopiert alles — auch Dateien, die niemand bewusst hinzufuegen wollte.
-Selbst das aktuelle offizielle Image hat reale CVEs — wichtig ist die Triage: `will_not_fix`
-akzeptieren und dokumentieren, `fixed`-Findings aktiv angehen.
-Die GitLab-Pipeline mit `--exit-code 1` ist das Sicherheitsnetz, das beides abfaengt.
+**Lernpunkt:** Security ist Risk Management, nicht Null-CVE-Zählen.
+`--ignore-unfixed` und `.trivyignore` sind keine Auswege — sie erzwingen explizite,
+dokumentierte Entscheidungen pro Finding. `COPY . .` kopiert alles, was im Verzeichnis liegt.
+Die GitLab-Pipeline mit `--exit-code 1` ist das Sicherheitsnetz, das alle drei Faelle abfaengt.
