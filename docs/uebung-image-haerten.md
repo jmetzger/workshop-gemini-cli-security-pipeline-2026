@@ -2,11 +2,16 @@
 
 ## Ziel
 
-Wir bauen das Gemini-CLI-Image in zwei Stufen:
+Wir patchen das offizielle Gemini-CLI-Sandbox-Image in zwei Stufen:
 
 1. **Lokal** — absichtlich mit zwei nicht-offensichtlichen Sicherheitsluecken
 2. **GitLab CI/CD** — Trivy-Scanner findet die Luecken automatisch
 3. **Fix** — gehaertetes Image, das den Scan besteht
+
+> **Realer Ansatz:** In der Praxis baut man kein Image von Grund auf neu, sondern
+> nimmt das offizielle upstream-Image als `FROM`-Basis und patcht oder erweitert es.
+> Googles Gemini-CLI-Sandbox liegt oeffentlich auf der Google Artifact Registry:
+> `us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox`
 
 ---
 
@@ -24,27 +29,24 @@ newgrp docker
 
 ---
 
-## Schritt 1: Vorbereitung — Projektstruktur anlegen
+## Schritt 1: Vorbereitung — Arbeitsverzeichnis anlegen
 
-```
-cd
-mkdir -p gemini-image
-cd gemini-image
-git clone https://github.com/google-gemini/gemini-cli src
-cd src
+```bash
+mkdir -p ~/gemini-image
+cd ~/gemini-image
 ```
 
 API-Key als Umgebungsvariable ablegen (wie er in einem echten Projekt vorkommen wuerde):
 
-```
+```bash
 cat > .env <<'EOF'
 GEMINI_API_KEY=AIzaSyRnFq8tLvPzX9dK3hJmW7oBqE1gY6cAi4z
 EOF
 ```
 
-Trivy kennt den Gemini-API-Key-Format nicht von Haus aus — wir legen eine eigene Erkennungsregel an:
+Trivy kennt das Gemini-API-Key-Format nicht von Haus aus — wir legen eine eigene Erkennungsregel an:
 
-```
+```bash
 cat > trivy-secret.yaml <<'EOF'
 rules:
   - id: gemini-api-key
@@ -64,42 +66,24 @@ Dockerfile anlegen — mit zwei absichtlichen Schwachstellen:
 ```
 # vi Dockerfile
 
-# Schwachstelle 1: veraltetes, ungepatchtes Basisimage mit bekannten CVEs
-FROM node:20.9.0
+# Schwachstelle 1: selbst die aktuelle Version hat reale CVEs im Basisimage
+FROM us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:0.47.0
 
 WORKDIR /app
 
-# Workspace package.json Dateien fuer npm ci (gemini-cli ist ein Monorepo)
-COPY package*.json ./
-COPY packages/cli/package*.json ./packages/cli/
-COPY packages/core/package*.json ./packages/core/
-COPY packages/devtools/package*.json ./packages/devtools/
-COPY packages/sdk/package*.json ./packages/sdk/
-COPY packages/test-utils/package*.json ./packages/test-utils/
-COPY packages/a2a-server/package*.json ./packages/a2a-server/
-COPY packages/vscode-ide-companion/package*.json ./packages/vscode-ide-companion/
-COPY packages/vscode-ide-companion/scripts/ ./packages/vscode-ide-companion/scripts/
-
-RUN HUSKY=0 npm ci --ignore-scripts
-
 # Schwachstelle 2: kein .dockerignore — .env landet stillschweigend im Image
 COPY . .
-
-RUN HUSKY=0 npm run bundle
-
-USER node
-ENTRYPOINT ["node", "bundle/gemini.js"]
 ```
 
 Image bauen:
 
-```
+```bash
 docker build -t gemini-cli:insecure .
 ```
 
 Kurz pruefen, dass die Datei wirklich im Image ist:
 
-```
+```bash
 docker run --rm --entrypoint /bin/sh gemini-cli:insecure -c "cat /app/.env"
 ```
 
@@ -111,7 +95,7 @@ Der API-Key ist sichtbar — obwohl er nie bewusst "hinzugefuegt" wurde.
 
 Trivy starten (kein Install noetig — laeuft als Container):
 
-```
+```bash
 docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v $(pwd)/trivy-secret.yaml:/trivy-secret.yaml \
@@ -125,16 +109,25 @@ docker run --rm \
 Trivy findet beide Schwachstellen. Erwartete Ausgabe (gekuerzt):
 
 ```
-gemini-cli:insecure (debian 12.2)
+gemini-cli:insecure (debian 12.13)
 
-node:20.9.0 — CVE-Zusammenfassung
-┌─────────────────┬──────────────────┬──────────┬────────────────────────────┐
-│ Library         │ Vulnerability    │ Severity │ Title                      │
-├─────────────────┼──────────────────┼──────────┼────────────────────────────┤
-│ openssl         │ CVE-2026-31789   │ CRITICAL │ Heap buffer overflow        │
-│ openssh-client  │ CVE-2024-6387    │ HIGH     │ regreSSHion: RCE/DoS       │
-│ ...             │ ...              │ HIGH     │ ...                        │
-└─────────────────┴──────────────────┴──────────┴────────────────────────────┘
+Total: 228 (HIGH: 214, CRITICAL: 14)   ← OS-Pakete
+Total:  11 (HIGH:  11, CRITICAL:  0)   ← Node.js-Pakete
+
+┌───────────────────┬────────────────┬──────────┬──────────────┬─────────────────────┐
+│ Library           │ Vulnerability  │ Severity │ Status       │ Title               │
+├───────────────────┼────────────────┼──────────┼──────────────┼─────────────────────┤
+│ zlib1g            │ CVE-2023-45853 │ CRITICAL │ will_not_fix │ Integer overflow /  │
+│                   │                │          │              │ heap buffer overflow│
+├───────────────────┼────────────────┼──────────┼──────────────┼─────────────────────┤
+│ tar (package.json)│ CVE-2026-23745 │ HIGH     │ fixed        │ Arbitrary file      │
+│                   │                │          │              │ overwrite via       │
+│                   │                │          │              │ symlink poisoning   │
+├───────────────────┼────────────────┼──────────┼──────────────┼─────────────────────┤
+│ minimatch         │ CVE-2026-26996 │ HIGH     │ fixed        │ DoS via crafted     │
+│ (package.json)    │                │          │              │ glob patterns       │
+│ ...               │ ...            │ HIGH     │ fixed        │ ...                 │
+└───────────────────┴────────────────┴──────────┴──────────────┴─────────────────────┘
 
 app/.env (secrets)
 ===================
@@ -142,6 +135,11 @@ CRITICAL: GOOGLE (gemini-api-key)
  Gemini API Key
  app/.env:1
 ```
+
+> **Lernpunkt CVEs:** Viele OS-Findings sind `will_not_fix` — Debian hat keinen Patch
+> bereitgestellt. Das ist normal und kein Fehler des Images. Entscheidend ist die
+> Unterscheidung: `fixed`-Findings koennen und sollen behoben werden, `will_not_fix`
+> werden dokumentiert und akzeptiert.
 
 ---
 
@@ -161,77 +159,25 @@ CRITICAL: GOOGLE (gemini-api-key)
 *.json.secret
 service-account*.json
 .git
-node_modules
 *.log
 ```
 
-Dockerfile auf Multi-Stage-Build mit aktuellem, gepatchtem Basisimage umstellen.
-Der Multi-Stage-Ansatz hat einen weiteren Sicherheitsvorteil: Stage 2 erhaelt
-nur die gepackten npm-Artefakte — selbst wenn versehentlich sensitive Dateien
-in den Build-Kontext geraten, landen sie nie in der finalen Runtime-Stage.
+Dockerfile bleibt auf `0.47.0` — der entscheidende Fix ist das `.dockerignore`:
 
 ```
 # vi Dockerfile
 
-# ---- Stage 1: Builder ----
-FROM node:22-slim AS builder
+FROM us-docker.pkg.dev/gemini-code-dev/gemini-cli/sandbox:0.47.0
 
-RUN apt-get update && apt-get install -y --no-install-recommends git \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-WORKDIR /build
-
-COPY package*.json ./
-COPY packages/cli/package*.json ./packages/cli/
-COPY packages/core/package*.json ./packages/core/
-COPY packages/devtools/package*.json ./packages/devtools/
-COPY packages/sdk/package*.json ./packages/sdk/
-COPY packages/test-utils/package*.json ./packages/test-utils/
-COPY packages/a2a-server/package*.json ./packages/a2a-server/
-COPY packages/vscode-ide-companion/package*.json ./packages/vscode-ide-companion/
-COPY packages/vscode-ide-companion/scripts/ ./packages/vscode-ide-companion/scripts/
-
-RUN HUSKY=0 npm ci --ignore-scripts
-
-COPY packages/ ./packages/
-COPY tsconfig*.json ./
-COPY eslint.config.js ./
-COPY scripts/ ./scripts/
-COPY esbuild.config.js ./
-
-RUN HUSKY=0 npm run build && \
-    npm pack -w packages/core --pack-destination packages/core/dist/ && \
-    npm pack -w packages/cli --pack-destination packages/cli/dist/
-
-# ---- Stage 2: Runtime ----
-FROM node:22-slim
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  git curl socat ca-certificates \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /usr/local/share/npm-global \
-  && chown -R node:node /usr/local/share/npm-global
-ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=$PATH:/usr/local/share/npm-global/bin
-
-USER node
-
-COPY --from=builder --chown=node:node /build/packages/cli/dist/google-gemini-cli-*.tgz /tmp/gemini-cli.tgz
-COPY --from=builder --chown=node:node /build/packages/core/dist/google-gemini-cli-core-*.tgz /tmp/gemini-core.tgz
-
-RUN npm install -g /tmp/gemini-core.tgz \
-  && npm install -g /tmp/gemini-cli.tgz \
-  && gemini --version > /dev/null \
-  && npm cache clean --force \
-  && rm -f /tmp/gemini-*.tgz
-
-ENTRYPOINT ["/usr/local/share/npm-global/bin/gemini"]
+# Mit .dockerignore wird .env jetzt nicht mehr kopiert
+COPY . .
 ```
 
 Der API-Key wird zur Laufzeit per Umgebungsvariable uebergeben — nie ins Image gebacken:
 
-```
+```bash
 docker run --rm \
   -e GEMINI_API_KEY=$GEMINI_API_KEY \
   gemini-cli:secure --version
@@ -239,9 +185,9 @@ docker run --rm \
 
 Commit und Push — Pipeline soll jetzt durchlaufen:
 
-```
+```bash
 git add Dockerfile .dockerignore
-git commit -m "fix: harden image — update base, add .dockerignore"
+git commit -m "fix: harden image — update base version, add .dockerignore"
 git push
 ```
 
@@ -252,7 +198,7 @@ trivy-scan  PASSED — 0 HIGH/CRITICAL findings
 cis-scan    CIS Pass-Rate: ~70% (7/10 Checks bestanden)
 ```
 
-`USER node` im Dockerfile behebt CIS 4.1 (Non-Root) — der wichtigste Check.
+`USER node` ist im offiziellen Sandbox-Image bereits gesetzt — CIS 4.1 (Non-Root) ist damit behoben.
 Die restlichen Failures (HEALTHCHECK, no-new-privileges) sind Konfigurationssache
 beim Container-Start, nicht im Image selbst, und koennen in einem Folge-MR angegangen werden.
 
@@ -262,10 +208,11 @@ beim Container-Start, nicht im Image selbst, und koennen in einem Folge-MR angeg
 
 | Schwachstelle | Warum nicht offensichtlich | Wie gefunden | Fix |
 |---|---|---|---|
-| Veraltetes Basisimage `node:20.9.0` | Gepinnte Version wirkt "stabil" | Trivy CVE-Scan | `node:22-slim` verwenden |
+| 228 CVEs im aktuellen Image (14 CRITICAL) | Auch die neueste Version ist nicht CVE-frei | Trivy CVE-Scan | `will_not_fix` dokumentieren, `fixed` beheben |
 | `GEMINI_API_KEY` in `.env` im Image | Wurde nie explizit `ADD`-ed — nur `COPY . .` | Trivy Secret-Scan | `.dockerignore` anlegen |
-| Container laeuft als root | node-Images starten als root wenn kein `USER` gesetzt | [CIS-Scan in GitLab CI](uebung-gitlab-pipeline.md) (Check 4.1) | `USER node` ins Dockerfile |
+| Container laeuft als root | Standard bei vielen Base-Images | [CIS-Scan in GitLab CI](uebung-gitlab-pipeline.md) (Check 4.1) | Im offiziellen Image bereits `USER node` |
 
 **Lernpunkt:** `COPY . .` kopiert alles — auch Dateien, die niemand bewusst hinzufuegen wollte.
-Ein gepinntes altes Image klingt nach "Reproduzierbarkeit", enthaelt aber ungepatchte CVEs.
-Die GitLab-Pipeline mit `--exit-code 1` ist das Sicherheitsnetz, das beide Faelle abfaengt.
+Selbst das aktuelle offizielle Image hat reale CVEs — wichtig ist die Triage: `will_not_fix`
+akzeptieren und dokumentieren, `fixed`-Findings aktiv angehen.
+Die GitLab-Pipeline mit `--exit-code 1` ist das Sicherheitsnetz, das beides abfaengt.
