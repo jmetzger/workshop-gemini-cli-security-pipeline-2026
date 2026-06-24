@@ -188,29 +188,38 @@ docker run --rm --entrypoint /bin/sh gemini-cli:secure -c "cat /app/.env 2>&1 ||
 
 ### 4b: Upstream-CVEs dokumentieren — `.trivyignore`
 
-Nach dem Fix bleibt noch ein Problem: die 11 Node.js-CVEs (`tar`, `minimatch`, `glob`,
-`cross-spawn`) stecken in Googles eigenem bundled npm-Paket. Wir koennen sie nicht
-einfach patchen ohne das CLI zu brechen — wir sind auf ein Google-Update angewiesen.
+Nach dem Fix bleiben noch 17 CVEs offen: 6 in Debian-Paketen (`libgnutls30`, `libcap2`)
+und 11 in Googles bundled npm-Paketen (`tar`, `minimatch`, `glob`, `cross-spawn`).
+Alle stecken im upstream-Image — wir koennen sie nicht patchen ohne das Image
+grundlegend umzubauen. Wir sind auf ein Google-Update angewiesen.
 
 Die Loesung: `.trivyignore` — explizite, dokumentierte Akzeptanz des Restrisikos.
 
 ```
 # vi .trivyignore
 
-# CVEs in bundled npm packages of google/gemini-cli-sandbox:0.47.0
-# These are transitive dependencies inside the upstream image —
-# not directly fixable by us. Upstream tracking:
+# CVEs in google/gemini-cli-sandbox:0.47.0 — not directly fixable by us.
+# All findings are in Debian base packages or bundled npm packages of the
+# upstream image. Upstream tracking:
 #   https://github.com/google-gemini/gemini-cli/issues
 # Accepted risk: sandboxed CLI tool, no user-facing HTTP endpoints.
 # Review: when sandbox:0.48.0 releases stable.
 
-# cross-spawn
+# --- Debian OS packages (libgnutls30, libcap2) ---
+CVE-2026-33845
+CVE-2026-42010
+CVE-2026-33846
+CVE-2026-3833
+CVE-2026-42009
+CVE-2026-4878
+
+# --- bundled npm: cross-spawn ---
 CVE-2024-21538
 
-# glob
+# --- bundled npm: glob ---
 CVE-2025-64756
 
-# tar
+# --- bundled npm: tar ---
 CVE-2026-23745
 CVE-2026-23950
 CVE-2026-24842
@@ -218,7 +227,7 @@ CVE-2026-26960
 CVE-2026-29786
 CVE-2026-31802
 
-# minimatch
+# --- bundled npm: minimatch ---
 CVE-2026-26996
 CVE-2026-27903
 CVE-2026-27904
@@ -280,8 +289,8 @@ beim Container-Start, nicht im Image selbst, und koennen in einem Folge-MR angeg
 
 | Schwachstelle | Warum nicht offensichtlich | Wie gefunden | Fix |
 |---|---|---|---|
-| OS-CVEs (`will_not_fix`) | Debian stellt keinen Patch bereit | Trivy CVE-Scan | `--ignore-unfixed` in Pipeline |
-| Node.js-CVEs in Googles Bundle (`fixed`) | Upstream-Abhaengigkeit, nicht direkt patchbar | Trivy CVE-Scan | `.trivyignore` mit Begruendung |
+| OS-CVEs (`will_not_fix`, ~222) | Debian stellt keinen Patch bereit | Trivy CVE-Scan | `--ignore-unfixed` in Pipeline |
+| OS-CVEs `fixed` (`libgnutls30`, `libcap2`) + Node.js-CVEs (17 total) | Upstream-Abhaengigkeit in Googles Image | Trivy CVE-Scan | `.trivyignore` mit Begruendung |
 | `GEMINI_API_KEY` in `.env` im Image | Wurde nie explizit `ADD`-ed — nur `COPY . .` | Trivy Secret-Scan | `.dockerignore` anlegen |
 | Container laeuft als root | Standard bei vielen Base-Images | [CIS-Scan in GitLab CI](uebung-gitlab-pipeline.md) (Check 4.1) | Im offiziellen Image bereits `USER node` |
 
