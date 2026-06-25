@@ -177,13 +177,20 @@ Wir nutzen **promptfoo** weil:
 
 ## Schritt 4: promptfoo lokal ausfuehren (Demo)
 
-Voraussetzung: Node.js >= 18 auf dem lokalen Rechner.
+Voraussetzung: Node.js >= 18. Pruefen und bei Bedarf installieren:
 
+```bash
+node --version 2>/dev/null || (curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs)
 ```
-# Einmalig: promptfoo direkt aus der Projekt-Konfiguration starten
-cd /pfad/zum/projekt
 
-export GOOGLE_API_KEY="euer-key"
+promptfoo aus dem Projektverzeichnis starten:
+
+```bash
+cd ~/exercises
+
+# promptfoo nutzt GOOGLE_API_KEY — aus dem bereits gesetzten GEMINI_API_KEY ableiten
+export GOOGLE_API_KEY="$GEMINI_API_KEY"
+echo "GOOGLE_API_KEY gesetzt: ${GOOGLE_API_KEY:0:4}..."
 
 npx promptfoo@latest redteam run \
   --config tests/injection/promptfooconfig.yaml \
