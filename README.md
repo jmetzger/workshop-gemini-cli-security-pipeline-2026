@@ -10,6 +10,9 @@
 
  1. Installation (gemini) - bereits vorbereitet
     * [Installation & Voraussetzungen - bash scripts/install-gemini-cli.sh](docs/installation.md)
+
+ 1. Gemini CLI absichern: Zentrale Security-Settings
+     * [Uebung: Gemini CLI absichern ueber zentrale Settings](docs/uebung-gemini-cli-absichern.md)
    
  1. Gehaertetes Gemini-CLI-Image bauen
     * [Uebung: Image lokal bauen, scannen und haerten](docs/uebung-image-haerten.md)
@@ -17,10 +20,6 @@
 
 ## Backlog - Agenda
      
-  1. Gemini CLI absichern: Zentrale Security-Settings
-     * [Uebung: Gemini CLI absichern ueber zentrale Settings](docs/uebung-gemini-cli-absichern.md)
-   
-
   1. Gemini-CLI-Image auf Sicherheitsluecken scannen
      * [CVE-Scan: Schwachstellen in Paketen und Secrets erkennen](docs/uebung-image-haerten.md#schritt-3-lokal-mit-trivy-scannen)
      * [CIS-Scan: GitLab CI/CD Pipeline mit Trivy und Kaniko](docs/uebung-gitlab-pipeline.md)
