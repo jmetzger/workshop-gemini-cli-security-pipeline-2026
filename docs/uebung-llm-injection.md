@@ -192,7 +192,7 @@ cd ~/exercises
 export GOOGLE_API_KEY="$GEMINI_API_KEY"
 echo "GOOGLE_API_KEY gesetzt: ${GOOGLE_API_KEY:0:4}..."
 
-npx promptfoo@latest redteam run \
+npx -y promptfoo@latest redteam run \
   --config tests/injection/promptfooconfig.yaml \
   --output promptfoo-report.json
 ```
