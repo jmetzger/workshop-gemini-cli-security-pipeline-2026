@@ -3,7 +3,7 @@
 ## Agenda 
 
  1. Uebungsvorbereitung
-    * [Repository clonen](docs/uebungsvorbereitung.md)
+    * [Repo clonen, Gemini CLI und Verbindung pruefen](docs/uebungsvorbereitung.md)
 
  1. Einstieg
     * [DORA-Einordnung](docs/dora-overview.md)
