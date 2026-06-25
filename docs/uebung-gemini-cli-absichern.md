@@ -261,9 +261,12 @@ GEMINI_SANDBOX=false gemini
 | `security.disableYoloMode: true` | Ja | Ja (Code-Enforcement) |
 | Policy Engine (`/etc/gemini-cli/policies/*.toml`) | Ja | Ja |
 
-Wer Sandbox verbindlich erzwingen will, muss zusaetzlich auf OS-Ebene
-sicherstellen, dass Nutzer `gemini` nur ueber ein Wrapper-Script starten
-koennen, das `--no-sandbox` blockiert — oder auf Container-Isolation setzen.
+Wer Sandbox verbindlich erzwingen will, hat zwei Optionen:
+
+- **Policy Engine** (empfohlen): TOML-Regeln in `/etc/gemini-cli/policies/`
+  werden unabhaengig von CLI-Flags und Env-Vars ausgewertet.
+- **Wrapper-Script**: Nutzer starten `gemini` nur ueber ein zentrales Script,
+  das `--no-sandbox` und `GEMINI_SANDBOX=false` explizit blockiert.
 
 ---
 
