@@ -16,11 +16,6 @@
 
 
 ## Backlog - Agenda
-
-  1. (Einstieg)
-     * [DORA-Einordnung](docs/dora-overview.md)
-    
- 
      
   1. Gemini CLI absichern: Zentrale Security-Settings
      * [Uebung: Gemini CLI absichern ueber zentrale Settings](docs/uebung-gemini-cli-absichern.md)
