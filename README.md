@@ -25,6 +25,7 @@
      * [CIS-Scan: GitLab CI/CD Pipeline mit Trivy und Kaniko](docs/uebung-gitlab-pipeline.md)
 
   1. LLM-Injections verhinden, testen und analysieren
+     * [DORA und LLM Injection Testing — Die ehrliche Einordnung](docs/dora-llm-injection-testing.md)
      * [Uebung: LLM Prompt Injection — Verstehen, Testen, Abfangen](docs/uebung-llm-injection.md)
      * [Guardrails setzen und pruefen](docs/uebung-llm-injection.md#guardrails-pruefen--verifikation-mit-tests)
 
