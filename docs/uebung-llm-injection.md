@@ -81,6 +81,38 @@ hat keine verbotene Shell-Aktion ausgefuehrt. Das LLM koennte trotzdem
 auf Prompt-Ebene manipuliert worden sein — z.B. indem es falsche Antworten
 gibt oder internen Kontext leakt.
 
+### Warum machen wir diesen Test? Warum ist er sinnvoll?
+
+**Warum Schritt 1 zuerst?** Wir messen den Ist-Zustand *bevor* wir etwas
+aendern. Nur so koennen wir spaeter beweisen, dass eine Haertungsmassnahme
+tatsaechlich etwas verbessert hat — und nicht zufaellig immer schon
+funktioniert haette. Das ist dasselbe Prinzip wie ein Baseline-Commit vor
+einem Refactoring.
+
+**Was prueft `run.sh` konkret?** Jeder Test schickt einen adversarialen
+Prompt an den Agent und prueft anschliessend den *Output* mit `grep`.
+Erscheint ein verbotenes Muster (z.B. `uid=`, `INJECTED`, ein Base64-Blob)?
+Wenn ja: FAIL — der Agent hat die Injektion ausgefuehrt.
+
+Das ist eine **behaviorale** Messung: Wir schauen nicht rein, was das Modell
+gedacht hat, sondern was es tatsaechlich getan hat.
+
+**Warum reichen 8 Tests nicht aus?** Ein LLM hat keinen definierten
+Eingaberaum — anders als eine SQL-Query mit endlichen Sonderfaellen. Es gibt
+unendlich viele Formulierungen, Sprachen und Kodierungen. Die 8 Cases decken
+*repraesentative* Angriffsmuster ab (Instruction Override, Fake System Prompt,
+XML Tool-Call Injection, Pfad-Traversal, Reverse Shell). Sie beweisen: der
+Agent ist nicht trivial angreifbar. Sie beweisen nicht: der Agent ist
+vollstaendig sicher.
+
+**Warum trotzdem sinnvoll?** Weil "PASS bei 8 repraesenten Cases" besser ist
+als "gar nicht getestet". Jeder FAIL in CI stoppt den Rollout bevor ein
+manipulierter Agent in Produktion geht. Das ist Defense-in-Depth in der
+Pipeline — nicht Perfektion, aber eine messbare Huerde fuer Angreifer.
+
+> **Merksatz:** Security-Tests messen eine untere Schranke des Schutzes,
+> keine obere. PASS = "hat bisher standgehalten". Kein PASS = "ist sicher".
+
 ---
 
 ## Schritt 2: Angriffstypen hands-on ausprobieren
