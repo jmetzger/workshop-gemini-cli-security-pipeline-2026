@@ -31,13 +31,15 @@ diese ueberschreibt alles andere.
   },
   "tools": {
     "sandbox": "docker",
-    "core": ["ReadFile", "WriteFile", "RunCommand", "SearchFiles"],
+    "core": ["read_file", "write_file", "run_shell_command", "search_files"],
     "sandboxNetworkAccess": false
   },
   "mcp": {
     "allowed": []
   },
-  "logPrompts": false
+  "telemetry": {
+    "logPrompts": false
+  }
 }
 ```
 
@@ -49,7 +51,7 @@ diese ueberschreibt alles andere.
 | `tools.core` | Allowlist: nur diese Built-in-Tools sind verfuegbar |
 | `tools.sandboxNetworkAccess` | Netzwerkzugriff aus Sandbox heraus sperren |
 | `mcp.allowed` | Leere Liste: keine externen MCP-Server erlaubt |
-| `logPrompts` | Kein Logging von Prompts (Datenschutz) |
+| `telemetry.logPrompts` | Kein Logging von Prompts (Datenschutz) |
 
 ---
 
@@ -72,13 +74,15 @@ Inhalt einfuegen:
   },
   "tools": {
     "sandbox": "docker",
-    "core": ["ReadFile", "WriteFile", "RunCommand", "SearchFiles"],
+    "core": ["read_file", "write_file", "run_shell_command", "search_files"],
     "sandboxNetworkAccess": false
   },
   "mcp": {
     "allowed": []
   },
-  "logPrompts": false
+  "telemetry": {
+    "logPrompts": false
+  }
 }
 ```
 
@@ -104,13 +108,15 @@ $settings = @'
   },
   "tools": {
     "sandbox": "docker",
-    "core": ["ReadFile", "WriteFile", "RunCommand", "SearchFiles"],
+    "core": ["read_file", "write_file", "run_shell_command", "search_files"],
     "sandboxNetworkAccess": false
   },
   "mcp": {
     "allowed": []
   },
-  "logPrompts": false
+  "telemetry": {
+    "logPrompts": false
+  }
 }
 '@
 
@@ -142,22 +148,22 @@ gemini
 
 
 
-Oder direkt die Datei lesen lassen:
+Oder die Settings-Datei direkt lesen:
 
 ```
-gemini --config-debug
+cat /etc/gemini-cli/settings.json
 ```
 
-Sandbox-Status pruefen:
+Sandbox-Eintrag pruefen:
 
 ```
-gemini config get tools.sandbox
+grep sandbox /etc/gemini-cli/settings.json
 ```
 
 Erwartete Ausgabe:
 
 ```
-tools.sandbox = docker
+    "sandbox": "docker",
 ```
 
 ---
@@ -198,16 +204,16 @@ Ein Nutzer versucht, die Sandbox lokal zu deaktivieren:
 ```
 
 Da die System-Policy hoehere Prioritaet hat, gilt weiterhin `sandbox: docker`.
-Das bestaetigt:
+Das bestaetigt ein Blick in die System-Settings-Datei:
 
 ```
-gemini config get tools.sandbox
+cat /etc/gemini-cli/settings.json
 ```
 
-Erwartete Ausgabe:
+Erwartete Ausgabe (Nutzer-Settings werden ignoriert, System-Settings bleiben aktiv):
 
 ```
-tools.sandbox = docker  (enforced by system policy)
+    "sandbox": "docker",
 ```
 
 ---
@@ -222,4 +228,4 @@ tools.sandbox = docker  (enforced by system policy)
 | Sandbox erzwingen | `tools.sandbox: "docker"` | identisch |
 | Tool-Allowlist setzen | `tools.core: [...]` | identisch |
 | Externe MCP-Server sperren | `mcp.allowed: []` | identisch |
-| Prompt-Logging abschalten | `logPrompts: false` | identisch |
+| Prompt-Logging abschalten | `telemetry.logPrompts: false` | identisch |
