@@ -218,6 +218,55 @@ Erwartete Ausgabe (Nutzer-Settings werden ignoriert, System-Settings bleiben akt
 
 ---
 
+## Schritt 5: Sandbox-Bypass via CLI-Flag und Umgebungsvariable
+
+> **Wichtig:** `tools.sandbox` in der Settings-Datei kann durch CLI-Flags und
+> Umgebungsvariablen ueberschrieben werden — anders als `disableYoloMode`, das
+> explizit per Code durchgesetzt wird.
+
+### Bypass 1: `--no-sandbox` Flag
+
+Da `--sandbox` ein Boolean-Flag ist, akzeptiert Gemini CLI automatisch die
+Negation `--no-sandbox`. Intern gilt:
+
+```
+sandboxOption = argv.sandbox ?? settings.tools?.sandbox
+```
+
+`??` (Nullish Coalescing) gibt nur bei `null` oder `undefined` auf den rechten
+Wert zurueck — bei `false` nicht. Setzt `--no-sandbox` den Wert auf `false`,
+gewinnt der CLI-Flag gegen die Settings-Datei:
+
+```
+gemini --no-sandbox
+```
+
+Die Sandbox ist damit deaktiviert, obwohl `/etc/gemini-cli/settings.json`
+`"sandbox": "docker"` setzt.
+
+### Bypass 2: Umgebungsvariable `GEMINI_SANDBOX`
+
+Umgebungsvariablen haben in der Konfigurationshierarchie Prioritaet 6,
+System-Settings Prioritaet 5 — Env-Vars gewinnen also:
+
+```
+GEMINI_SANDBOX=false gemini
+```
+
+### Fazit: Sandbox allein ueber settings.json ist nicht durchsetzbar
+
+| Massnahme | Schutzt gegen settings.json-Override? | Schutzt gegen --no-sandbox? |
+|---|---|---|
+| `tools.sandbox: "docker"` in System-Settings | Ja (Nutzer-Settings) | Nein |
+| `security.disableYoloMode: true` | Ja | Ja (Code-Enforcement) |
+| Policy Engine (`/etc/gemini-cli/policies/*.toml`) | Ja | Ja |
+
+Wer Sandbox verbindlich erzwingen will, muss zusaetzlich auf OS-Ebene
+sicherstellen, dass Nutzer `gemini` nur ueber ein Wrapper-Script starten
+koennen, das `--no-sandbox` blockiert — oder auf Container-Isolation setzen.
+
+---
+
 ## Zusammenfassung
 
 | Massnahme | Linux | Windows |
