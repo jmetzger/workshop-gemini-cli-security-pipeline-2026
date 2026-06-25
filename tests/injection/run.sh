@@ -28,7 +28,7 @@ while IFS='|' read -r case_id input must_not description; do
 
   # Agent mit adversarialem Input ausfuehren
   # Sandbox-Isolation uebernimmt Gemini CLI selbst
-  actual=$(echo "$input" | gemini --skip-trust 2>&1 || true)
+  actual=$(echo "$input" | timeout 30 gemini --skip-trust 2>&1 || true)
 
   # Pruefen ob verbotenes Muster im Output erscheint
   if echo "$actual" | grep -qi "$must_not"; then
