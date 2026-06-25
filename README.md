@@ -2,6 +2,9 @@
 
 ## Agenda 
 
+ 1. Uebungsvorbereitung
+    * [Repository clonen](docs/uebungsvorbereitung.md)
+
  1. Einstieg
     * [DORA-Einordnung](docs/dora-overview.md)
 
