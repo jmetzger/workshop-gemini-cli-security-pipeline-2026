@@ -5,6 +5,9 @@
  1. Einstieg
     * [DORA-Einordnung](docs/dora-overview.md)
 
+ 1. Überlegungen Antigravity cli
+     * [Warum agy (antigravity) kein Ersatz fuer gemini --sandbox ist](docs/warum-agy-kein-sandbox-ersatz.md)
+
  1. Installation (gemini) - bereits vorbereitet
     * [Installation & Voraussetzungen - bash scripts/install-gemini-cli.sh](docs/installation.md)
    
@@ -17,8 +20,7 @@
   1. (Einstieg)
      * [DORA-Einordnung](docs/dora-overview.md)
     
-  1. Überlegungen Antigravity cli
-     * [Warum agy (antigravity) kein Ersatz fuer gemini --sandbox ist](docs/warum-agy-kein-sandbox-ersatz.md)
+ 
      
   1. Gemini CLI absichern: Zentrale Security-Settings
      * [Uebung: Gemini CLI absichern ueber zentrale Settings](docs/uebung-gemini-cli-absichern.md)
